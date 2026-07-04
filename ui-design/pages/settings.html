@@ -1,0 +1,290 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cài đặt · FB Bot</title>
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('fbbot-theme') === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch (error) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="../html/styles.css?v=5" />
+    <script src="../html/theme.js?v=5" defer></script>
+    <script src="../html/api.js?v=5" defer></script>
+    <script src="../html/app.js?v=5" defer></script>
+  </head>
+  <body class="page-settings">
+    <div class="app">
+      <aside class="sidebar">
+        <nav>
+          <a href="../html/index.html" class="nav-dashboard">
+            <span class="nav-icon">🏠</span><span class="nav-label"> Dashboard</span>
+          </a>
+          <a href="groups.html" class="nav-groups">
+            <span class="nav-icon">👥</span><span class="nav-label"> Nhóm</span>
+          </a>
+          <a href="topics.html" class="nav-topics">
+            <span class="nav-icon">🏷️</span><span class="nav-label"> Chủ đề</span>
+          </a>
+          <a href="schedules.html" class="nav-schedules">
+            <span class="nav-icon">📅</span><span class="nav-label"> Lịch đăng</span>
+          </a>
+          <a href="logs.html" class="nav-logs">
+            <span class="nav-icon">📋</span><span class="nav-label"> Logs</span>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h2>Cài đặt hệ thống</h2>
+            <p class="sub">Cấu hình hoạt động của bot và các thông số mặc định.</p>
+          </div>
+        </header>
+
+        <div id="status" style="margin-bottom:16px;"></div>
+
+        <div class="settings-layout">
+
+          <!-- Giao diện -->
+          <section class="settings-section">
+            <div class="settings-section-header">
+              <span class="settings-section-icon">🎨</span>
+              <div>
+                <h3>Giao diện</h3>
+                <p>Tuỳ chỉnh giao diện hiển thị của ứng dụng.</p>
+              </div>
+            </div>
+            <div class="settings-body">
+              <div class="settings-row">
+                <div class="settings-row-label">
+                  <label>Chủ đề màu sắc</label>
+                  <span>Chọn giữa giao diện tối hoặc sáng.</span>
+                </div>
+                <div class="settings-row-control">
+                  <button type="button" id="themeToggleSwitch" class="theme-toggle-settings" aria-pressed="false">
+                    <span class="tts-track">
+                      <span class="tts-thumb"></span>
+                    </span>
+                    <span class="tts-icon">🌙</span>
+                    <span class="tts-label">Chế độ tối</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Bot behavior -->
+          <section class="settings-section">
+            <div class="settings-section-header">
+              <span class="settings-section-icon">🤖</span>
+              <div>
+                <h3>Hành vi Bot</h3>
+                <p>Thời gian chờ và giới hạn tương tác giữa các nhóm.</p>
+              </div>
+            </div>
+            <div class="settings-body">
+              <div class="settings-row">
+                <div class="settings-row-label">
+                  <label for="settingWaitTime">Thời gian chờ giữa các nhóm</label>
+                  <span>Giây bot chờ sau khi đăng vào một nhóm trước khi chuyển sang nhóm tiếp theo.</span>
+                </div>
+                <div class="settings-row-control">
+                  <input type="number" id="settingWaitTime" min="1" max="300" placeholder="60" />
+                  <span class="unit">giây</span>
+                </div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label">
+                  <label for="settingLikeLimit">Giới hạn like / phiên</label>
+                  <span>Số lượt like tối đa bot thực hiện trong mỗi lần tương tác.</span>
+                </div>
+                <div class="settings-row-control">
+                  <input type="number" id="settingLikeLimit" min="0" max="500" placeholder="50" />
+                  <span class="unit">lượt</span>
+                </div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label">
+                  <label for="settingCommentLimit">Giới hạn comment / phiên</label>
+                  <span>Số comment tối đa bot thực hiện trong mỗi lần tương tác.</span>
+                </div>
+                <div class="settings-row-control">
+                  <input type="number" id="settingCommentLimit" min="0" max="200" placeholder="10" />
+                  <span class="unit">comment</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Media -->
+          <section class="settings-section">
+            <div class="settings-section-header">
+              <span class="settings-section-icon">🖼️</span>
+              <div>
+                <h3>Thư mục ảnh</h3>
+                <p>Đường dẫn thư mục chứa ảnh bot sẽ đính kèm khi đăng bài.</p>
+              </div>
+            </div>
+            <div class="settings-body">
+              <div class="settings-row">
+                <div class="settings-row-label">
+                  <label for="settingImageDir">Đường dẫn thư mục ảnh</label>
+                  <span>Ví dụ: C:/fb_images hoặc ./images</span>
+                </div>
+                <div class="settings-row-control" style="flex:1;">
+                  <input type="text" id="settingImageDir" placeholder="C:/fb_images" style="width:100%;max-width:320px;" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Save button -->
+          <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:4px;">
+            <button class="btn" type="button" onclick="loadSettingsPage()">↺ Đặt lại</button>
+            <button class="btn btn-primary" id="saveSettingsBtn" type="button" onclick="saveSettings()">💾 Lưu cài đặt</button>
+          </div>
+
+          <!-- About -->
+          <section class="settings-section">
+            <div class="settings-section-header">
+              <span class="settings-section-icon">ℹ️</span>
+              <div>
+                <h3>Thông tin hệ thống</h3>
+                <p>Phiên bản và trạng thái kết nối.</p>
+              </div>
+            </div>
+            <div class="settings-body">
+              <div class="settings-row">
+                <div class="settings-row-label"><label>Phiên bản</label></div>
+                <div class="settings-row-control"><span class="badge badge-idle">v1.0.0</span></div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label"><label>Backend API</label></div>
+                <div class="settings-row-control">
+                  <span id="backendStatus" class="badge badge-idle"><span class="dot dot-idle"></span> Đang kiểm tra...</span>
+                </div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label"><label>Database</label></div>
+                <div class="settings-row-control">
+                  <span class="badge badge-success"><span class="dot dot-success"></span> MongoDB</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+          <!-- Bot behavior -->
+          <section class="settings-section">
+            <div class="settings-section-header">
+              <span class="settings-section-icon">🤖</span>
+              <div>
+                <h3>Hành vi Bot</h3>
+                <p>Thời gian chờ và giới hạn tương tác giữa các nhóm.</p>
+              </div>
+            </div>
+            <div class="settings-body">
+              <div class="settings-row">
+                <div class="settings-row-label">
+                  <label for="settingWaitTime">Thời gian chờ giữa các nhóm</label>
+                  <span>Giây bot chờ sau khi đăng vào một nhóm trước khi chuyển sang nhóm tiếp theo.</span>
+                </div>
+                <div class="settings-row-control">
+                  <input type="number" id="settingWaitTime" min="1" max="300" placeholder="60" />
+                  <span class="unit">giây</span>
+                </div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label">
+                  <label for="settingLikeLimit">Giới hạn like / phiên</label>
+                  <span>Số lượt like tối đa bot thực hiện trong mỗi lần tương tác.</span>
+                </div>
+                <div class="settings-row-control">
+                  <input type="number" id="settingLikeLimit" min="0" max="500" placeholder="50" />
+                  <span class="unit">lượt</span>
+                </div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label">
+                  <label for="settingCommentLimit">Giới hạn comment / phiên</label>
+                  <span>Số comment tối đa bot thực hiện trong mỗi lần tương tác.</span>
+                </div>
+                <div class="settings-row-control">
+                  <input type="number" id="settingCommentLimit" min="0" max="200" placeholder="10" />
+                  <span class="unit">comment</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Media -->
+          <section class="settings-section">
+            <div class="settings-section-header">
+              <span class="settings-section-icon">🖼️</span>
+              <div>
+                <h3>Thư mục ảnh</h3>
+                <p>Đường dẫn thư mục chứa ảnh bot sẽ đính kèm khi đăng bài.</p>
+              </div>
+            </div>
+            <div class="settings-body">
+              <div class="settings-row">
+                <div class="settings-row-label">
+                  <label for="settingImageDir">Đường dẫn thư mục ảnh</label>
+                  <span>Ví dụ: C:/fb_images hoặc ./images</span>
+                </div>
+                <div class="settings-row-control" style="flex:1;">
+                  <input type="text" id="settingImageDir" placeholder="C:/fb_images" style="width:100%;max-width:320px;" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Save button -->
+          <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:8px;">
+            <button class="btn" type="button" onclick="loadSettings()">↺ Đặt lại</button>
+            <button class="btn btn-primary" type="button" onclick="saveSettings()">💾 Lưu cài đặt</button>
+          </div>
+
+          <!-- About -->
+          <section class="settings-section" style="margin-top:8px;">
+            <div class="settings-section-header">
+              <span class="settings-section-icon">ℹ️</span>
+              <div>
+                <h3>Thông tin</h3>
+                <p>Phiên bản và trạng thái hệ thống.</p>
+              </div>
+            </div>
+            <div class="settings-body">
+              <div class="settings-row">
+                <div class="settings-row-label"><label>Phiên bản</label></div>
+                <div class="settings-row-control"><span class="badge badge-idle">v1.0.0</span></div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label"><label>Backend</label></div>
+                <div class="settings-row-control">
+                  <span id="backendStatus" class="badge badge-idle"><span class="dot dot-idle"></span> Đang kiểm tra...</span>
+                </div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label"><label>Database</label></div>
+                <div class="settings-row-control">
+                  <span class="badge badge-success"><span class="dot dot-success"></span> MongoDB</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+    <div id="toastContainer" class="toast-container"></div>
+  </body>
+</html>

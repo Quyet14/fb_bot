@@ -1,0 +1,13 @@
+[Header]
+Logo | Dashboard | Settings
+
+[Sidebar]
+Groups
+Topics
+Schedules
+Logs
+
+[Main Content]
+- Total Groups
+- Active Schedules
+- Recent Activity

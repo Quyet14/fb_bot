@@ -1,0 +1,92 @@
+/* ============================================================
+   Design tokens
+   Two themes share the same variable names, so every component
+   file below only ever refers to a token — never a raw color.
+   Switching theme = swapping the block that defines the tokens.
+   ============================================================ */
+
+:root {
+  /* ---------- Dark theme (default) ---------- */
+  --bg: #0a0e18;
+  --bg-soft: #0e1421;
+  --surface: #131a2a;
+  --surface-2: #1a2338;
+  --border: #262f47;
+  --border-soft: #1d2538;
+
+  --text: #eef1f8;
+  --text-muted: #97a3bd;
+  --text-faint: #59647e;
+
+  /* Channel colours — one per function */
+  --c-dashboard: #38bdf8;   --c-dashboard-soft: #0f2c3d;
+  --c-groups:    #a78bfa;   --c-groups-soft: #241f42;
+  --c-topics:    #fbbf24;   --c-topics-soft: #3a2c10;
+  --c-schedules: #34d399;   --c-schedules-soft: #0f2f27;
+  --c-logs:      #fb7185;   --c-logs-soft: #3a1620;
+
+  --shadow: 0 10px 28px rgba(3, 6, 16, 0.45);
+  --bg-glow-1: rgba(56, 189, 248, 0.10);
+  --bg-glow-2: rgba(167, 139, 250, 0.08);
+
+  /* Status (reuses channel hues on purpose: green=running well,
+     amber=in progress, rose=failed — same vocabulary everywhere) */
+  --success: var(--c-schedules); --success-soft: var(--c-schedules-soft);
+  --warning: var(--c-topics);    --warning-soft: var(--c-topics-soft);
+  --danger:  var(--c-logs);      --danger-soft: var(--c-logs-soft);
+
+  /* Active page accent — overridden per page via body class */
+  --accent: var(--c-dashboard);
+  --accent-soft: var(--c-dashboard-soft);
+
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+}
+
+/* ---------- Light theme ----------
+   Same variable names, higher-contrast values so text passes
+   WCAG AA on white/near-white surfaces (checked against
+   surface/text pairs, not just decoration). Channel colours are
+   darkened/desaturated versions of the dark-theme hues so a page
+   keeps its identity when the user switches themes. */
+:root[data-theme='light'] {
+  --bg: #f4f6fb;
+  --bg-soft: #eef1f8;
+  --surface: #ffffff;
+  --surface-2: #eef1f8;
+  --border: #dbe1ee;
+  --border-soft: #e6eaf3;
+
+  --text: #16202f;
+  --text-muted: #52607a;
+  --text-faint: #7c889f;
+
+  --c-dashboard: #0369a1;   --c-dashboard-soft: #e0f2fe;
+  --c-groups:    #6d28d9;   --c-groups-soft: #efe9fe;
+  --c-topics:    #b45309;   --c-topics-soft: #fef3c7;
+  --c-schedules: #047857;   --c-schedules-soft: #d7f5e9;
+  --c-logs:      #be123c;   --c-logs-soft: #ffe4e8;
+
+  --shadow: 0 10px 24px rgba(30, 41, 59, 0.08);
+  --bg-glow-1: rgba(3, 105, 161, 0.06);
+  --bg-glow-2: rgba(109, 40, 217, 0.05);
+
+  --success: var(--c-schedules); --success-soft: var(--c-schedules-soft);
+  --warning: var(--c-topics);    --warning-soft: var(--c-topics-soft);
+  --danger:  var(--c-logs);      --danger-soft: var(--c-logs-soft);
+
+  --accent: var(--c-dashboard);
+  --accent-soft: var(--c-dashboard-soft);
+}
+
+/* Per-page accent — same in both themes since it just points at
+   the channel color pair already defined above. */
+body.page-groups    { --accent: var(--c-groups);    --accent-soft: var(--c-groups-soft); }
+body.page-topics    { --accent: var(--c-topics);    --accent-soft: var(--c-topics-soft); }
+body.page-schedules { --accent: var(--c-schedules); --accent-soft: var(--c-schedules-soft); }
+body.page-logs      { --accent: var(--c-logs);      --accent-soft: var(--c-logs-soft); }
+body.page-settings  { --accent: var(--c-dashboard); --accent-soft: var(--c-dashboard-soft); }

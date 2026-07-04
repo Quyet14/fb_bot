@@ -1,0 +1,13 @@
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .field-grid,
+  .field-grid-2 { grid-template-columns: 1fr; }
+  .cards { grid-template-columns: 1fr; }
+  .grid { grid-template-columns: 1fr; }
+  .app { flex-direction: column; }
+  .sidebar { width: 100%; }
+  .main { padding: 6px 20px 32px; }
+}

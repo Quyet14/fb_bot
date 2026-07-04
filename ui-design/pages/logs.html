@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Logs hoạt động · FB Bot</title>
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('fbbot-theme') === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch (error) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="../html/styles.css?v=2" />
+    <script src="../html/theme.js?v=2" defer></script>
+    <script src="../html/api.js?v=3" defer></script>
+    <script src="../html/app.js?v=3" defer></script>
+  </head>
+  <body class="page-logs">
+    <div class="app">
+      <aside class="sidebar">
+
+        <nav>
+          <a href="../html/index.html" class="nav-dashboard">
+            <span class="nav-icon">🏠</span><span class="nav-label"> Dashboard</span>
+          </a>
+          <a href="groups.html" class="nav-groups">
+            <span class="nav-icon">👥</span><span class="nav-label"> Nhóm</span>
+          </a>
+          <a href="topics.html" class="nav-topics">
+            <span class="nav-icon">🏷️</span><span class="nav-label"> Chủ đề</span>
+          </a>
+          <a href="schedules.html" class="nav-schedules">
+            <span class="nav-icon">📅</span><span class="nav-label"> Lịch đăng</span>
+          </a>
+          <a href="logs.html" class="nav-logs active">
+            <span class="nav-icon">📋</span><span class="nav-label"> Logs</span>
+          </a>
+        </nav>
+      </aside>
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h2>Logs hoạt động</h2>
+            <p class="sub">Lịch sử chạy của bot: đăng bài, repost, tương tác.</p>
+          </div>
+        </header>
+
+        <div id="status"></div>
+
+        <div class="panel" style="margin-top:16px;">
+          <table id="logsTable">
+            <thead>
+              <tr><th>Thời gian</th><th>Loại</th><th>Trạng thái</th><th>Chi tiết</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+    <div id="toastContainer" class="toast-container"></div>
+  </body>
+</html>

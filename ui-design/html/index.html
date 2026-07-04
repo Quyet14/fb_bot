@@ -1,0 +1,176 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FB Bot · Dashboard</title>
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('fbbot-theme') === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch (error) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="/html/styles.css?v=5" />
+  </head>
+  <body class="page-dashboard">
+    <div class="app">
+      <aside class="sidebar">
+
+        <nav>
+          <a href="index.html" class="nav-dashboard active">
+            <span class="nav-icon">🏠</span><span class="nav-label"> Dashboard</span>
+          </a>
+          <a href="../pages/groups.html" class="nav-groups">
+            <span class="nav-icon">👥</span><span class="nav-label"> Nhóm</span>
+          </a>
+          <a href="../pages/topics.html" class="nav-topics">
+            <span class="nav-icon">🏷️</span><span class="nav-label"> Chủ đề</span>
+          </a>
+          <a href="../pages/schedules.html" class="nav-schedules">
+            <span class="nav-icon">📅</span><span class="nav-label"> Lịch đăng</span>
+          </a>
+          <a href="../pages/logs.html" class="nav-logs">
+            <span class="nav-icon">📋</span><span class="nav-label"> Logs</span>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h2>Bảng điều khiển</h2>
+            <p class="sub">Tổng quan hoạt động bot · <span id="currentTime" style="font-family:var(--font-mono);font-size:12px;color:var(--text-faint);"></span></p>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button type="button" class="btn btn-primary" onclick="window.location.href='../pages/schedules.html?mode=create'">+ Tạo lịch mới</button>
+          </div>
+        </header>
+
+        <div id="status" style="margin-bottom:12px;"></div>
+
+        <!-- Stats row -->
+        <section class="cards" style="margin-bottom:22px;">
+          <div class="card stat-card">
+            <div class="stat-icon" style="background:var(--c-groups-soft);color:var(--c-groups);">👥</div>
+            <div class="stat-body">
+              <p>Tổng nhóm</p>
+              <h3 id="dashboardGroupCount">—</h3>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-icon" style="background:var(--c-schedules-soft);color:var(--c-schedules);">📅</div>
+            <div class="stat-body">
+              <p>Lịch hoạt động</p>
+              <h3 id="dashboardScheduleCount">—</h3>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-icon" style="background:var(--c-dashboard-soft);color:var(--c-dashboard);">⚡</div>
+            <div class="stat-body">
+              <p>Hoạt động hôm nay</p>
+              <h3 id="dashboardTodayCount">—</h3>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-icon" style="background:var(--c-logs-soft);color:var(--c-logs);">❌</div>
+            <div class="stat-body">
+              <p>Lỗi hôm nay</p>
+              <h3 id="dashboardErrorCount">—</h3>
+            </div>
+          </div>
+        </section>
+
+        <!-- Main content: 2 cols -->
+        <div class="dashboard-grid">
+
+          <!-- Recent activity -->
+          <div class="panel dashboard-panel">
+            <div class="panel-header">
+              <h3>Hoạt động gần đây</h3>
+              <a href="../pages/logs.html" class="panel-link">Xem tất cả →</a>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Thời gian</th>
+                  <th>Loại</th>
+                  <th>Trạng thái</th>
+                  <th>Chi tiết</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardRecentLogs">
+                <tr><td colspan="4" style="text-align:center;color:var(--text-faint);padding:20px;">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Right column -->
+          <div style="display:flex;flex-direction:column;gap:18px;">
+
+            <!-- Upcoming schedules -->
+            <div class="panel dashboard-panel">
+              <div class="panel-header">
+                <h3>Lịch sắp tới</h3>
+                <a href="../pages/schedules.html" class="panel-link">Quản lý →</a>
+              </div>
+              <div id="dashboardUpcoming" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+                <div style="text-align:center;color:var(--text-faint);font-size:13px;padding:16px;">Đang tải...</div>
+              </div>
+            </div>
+
+            <!-- Quick actions -->
+            <div class="panel dashboard-panel">
+              <div class="panel-header">
+                <h3>Thao tác nhanh</h3>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                <a href="../pages/groups.html" class="quick-action-btn">
+                  <span style="font-size:20px;">👥</span>
+                  <span>Thêm nhóm</span>
+                </a>
+                <a href="../pages/topics.html" class="quick-action-btn">
+                  <span style="font-size:20px;">🏷️</span>
+                  <span>Thêm chủ đề</span>
+                </a>
+                <a href="../pages/schedules.html?mode=create" class="quick-action-btn">
+                  <span style="font-size:20px;">📅</span>
+                  <span>Tạo lịch</span>
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </main>
+    </div>
+    <!-- Notification panel -->
+    <div id="notifPanel" class="notif-panel" style="display:none;">
+      <div class="notif-panel-header">
+        <h4>Thông báo</h4>
+        <button onclick="clearNotifications()" class="notif-clear-btn">Xóa tất cả</button>
+      </div>
+      <div id="notifList" class="notif-list">
+        <div class="notif-empty">Chưa có thông báo nào</div>
+      </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="/html/theme.js?v=5"></script>
+    <script src="/html/api.js?v=5"></script>
+    <script src="/html/app.js?v=5"></script>
+    <script>
+      // Clock
+      function updateClock() {
+        const el = document.getElementById('currentTime');
+        if (el) el.textContent = new Date().toLocaleString('vi-VN');
+      }
+      updateClock();
+      setInterval(updateClock, 1000);
+    </script>
+  </body>
+</html>

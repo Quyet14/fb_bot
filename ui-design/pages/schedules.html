@@ -1,0 +1,190 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý lịch · FB Bot</title>
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('fbbot-theme') === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch (error) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="../html/styles.css?v=2" />
+    <script src="../html/theme.js?v=2" defer></script>
+    <script src="../html/api.js?v=4" defer></script>
+    <script src="../html/app.js?v=4" defer></script>
+  </head>
+  <body class="page-schedules">
+    <div class="app">
+      <aside class="sidebar">
+
+        <nav>
+          <a href="../html/index.html" class="nav-dashboard">
+            <span class="nav-icon">🏠</span><span class="nav-label"> Dashboard</span>
+          </a>
+          <a href="groups.html" class="nav-groups">
+            <span class="nav-icon">👥</span><span class="nav-label"> Nhóm</span>
+          </a>
+          <a href="topics.html" class="nav-topics">
+            <span class="nav-icon">🏷️</span><span class="nav-label"> Chủ đề</span>
+          </a>
+          <a href="schedules.html" class="nav-schedules active">
+            <span class="nav-icon">📅</span><span class="nav-label"> Lịch đăng</span>
+          </a>
+          <a href="logs.html" class="nav-logs">
+            <span class="nav-icon">📋</span><span class="nav-label"> Logs</span>
+          </a>
+        </nav>
+      </aside>
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h2>Quản lý lịch</h2>
+            <p class="sub">Tạo và theo dõi lịch đăng bài, repost, tương tác theo thứ và giờ.</p>
+          </div>
+        </header>
+
+        <div id="status" style="margin-bottom:16px;"></div>
+
+        <form id="scheduleForm" class="card schedule-form">
+          <div class="field-grid">
+            <label class="field">
+              <span>Loại lịch</span>
+              <select id="scheduleType">
+                <option value="dang-bai">Đăng bài</option>
+                <option value="repost">Repost</option>
+                <option value="tuong-tac">Tương tác</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Thứ</span>
+              <input id="scheduleThu" placeholder="Thứ 2, Thứ 3..." required />
+            </label>
+            <label class="field">
+              <span>Giờ</span>
+              <input id="scheduleGio" placeholder="08:00" required />
+            </label>
+          </div>
+
+          <div id="schedulePostFields" class="field-grid field-grid-2">
+            <label class="field">
+              <span>Chọn kiểu đăng</span>
+              <select id="scheduleDangBaiMode">
+                <option value="topic" selected>Theo chủ đề</option>
+                <option value="content">Theo nội dung người dùng</option>
+              </select>
+            </label>
+
+            <label class="field" id="scheduleTopicField">
+              <span>Chủ đề</span>
+              <select id="scheduleTopicId"></select>
+            </label>
+
+            <label class="field field-full" id="scheduleContentTextField" style="display:none;">
+              <span>Nội dung bài đăng</span>
+              <textarea id="scheduleContentText" rows="4" placeholder="Nhập nội dung bạn muốn đăng lên nhóm..."></textarea>
+            </label>
+
+            <label class="field field-full">
+              <span>Nhóm ID (phân cách bằng dấu phẩy)</span>
+              <input id="scheduleGroupIds" placeholder="1,2,3" />
+            </label>
+
+            <div class="field field-full checkbox-row">
+              <label class="checkbox-inline" id="scheduleGiuNguyenGocField" style="display:none;">
+                <input id="scheduleGiuNguyenGoc" type="checkbox" checked />
+                <span>Giữ nguyên gốc</span>
+              </label>
+              <label class="checkbox-inline">
+                <input id="scheduleDangKemAnh" type="checkbox" />
+                <span>Đính kèm ảnh</span>
+              </label>
+            </div>
+          </div>
+
+
+          <div id="scheduleRepostFields" class="field-grid" style="display:none;">
+            <label class="field">
+              <span>Số bài</span>
+              <input id="scheduleSoBai" type="number" min="1" value="1" />
+            </label>
+            <label class="field">
+              <span>Nhóm nguồn ID</span>
+              <input id="scheduleNhomNguonIds" placeholder="1,2" />
+            </label>
+            <label class="field">
+              <span>Nhóm đích ID</span>
+              <input id="scheduleNhomDichIds" placeholder="3,4" />
+            </label>
+          </div>
+
+          <div id="scheduleInteractFields" class="field-grid" style="display:none;">
+            <label class="field">
+              <span>Nhóm ID</span>
+              <input id="scheduleGroupIdsInteract" placeholder="1,2,3" />
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="justify-self:start;">+ Tạo lịch mới</button>
+        </form>
+
+        <div id="schedulesRoot" class="grid"></div>
+      </main>
+    </div>
+
+    <!-- Modal Sửa lịch đăng bài -->
+    <div id="editPostModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+      <div style="background:var(--bg-card); border-radius:12px; padding:28px; width:480px; max-width:95vw; max-height:90vh; overflow-y:auto;">
+        <h3 style="margin:0 0 20px;">Sửa lịch đăng bài</h3>
+        <div class="field-grid field-grid-2">
+          <label class="field">
+            <span>Thứ</span>
+            <input id="editThu" placeholder="Thứ 7" />
+          </label>
+          <label class="field">
+            <span>Giờ</span>
+            <input id="editGio" placeholder="17:00" />
+          </label>
+          <label class="field">
+            <span>Kiểu đăng</span>
+            <select id="editMode">
+              <option value="topic">Theo chủ đề</option>
+              <option value="content">Theo nội dung người dùng</option>
+            </select>
+          </label>
+          <label class="field" id="editTopicField">
+            <span>Chủ đề</span>
+            <select id="editTopicId"></select>
+          </label>
+          <label class="field field-full" id="editContentField" style="display:none;">
+            <span>Nội dung bài đăng</span>
+            <textarea id="editContentText" rows="4"></textarea>
+          </label>
+          <label class="field field-full">
+            <span>Nhóm ID (phân cách bằng dấu phẩy)</span>
+            <input id="editGroupIds" placeholder="1,2,3" />
+          </label>
+          <div class="field field-full checkbox-row">
+            <label class="checkbox-inline" id="editGiuNguyenField" style="display:none;">
+              <input id="editGiuNguyen" type="checkbox" checked />
+              <span>Giữ nguyên gốc</span>
+            </label>
+            <label class="checkbox-inline">
+              <input id="editDangKemAnh" type="checkbox" />
+              <span>Đính kèm ảnh</span>
+            </label>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:20px; justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="closeEditModal()">Hủy</button>
+          <button class="btn btn-primary" onclick="submitEditPost()">Lưu</button>
+        </div>
+      </div>
+    </div>
+    <div id="toastContainer" class="toast-container"></div>
+  </body>
+</html>

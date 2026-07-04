@@ -1,0 +1,21 @@
+/* ============================================================
+   FB Bot Console — stylesheet entry point
+   Concept: a "signal board" for social automation. Each function
+   of the app (Nhóm / Chủ đề / Lịch / Logs) is wired to its own
+   colour channel, like coloured cables on a broadcast desk. The
+   colour follows you from the sidebar dot into that page's
+   buttons, focus rings and card accents — colourful, but each
+   colour means something rather than being decoration.
+
+   File is split by concern so each piece is easy to find:
+     css/tokens.css      - colors, fonts, spacing (dark + light)
+     css/base.css         - reset, body, app shell / sidebar
+     css/components.css   - buttons, cards, tables, forms
+     css/responsive.css   - small-screen breakpoints
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('./css/tokens.css');
+@import url('./css/base.css');
+@import url('./css/components.css');
+@import url('./css/responsive.css');

@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý chủ đề · FB Bot</title>
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('fbbot-theme') === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch (error) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="../html/styles.css?v=2" />
+    <script src="../html/theme.js?v=2" defer></script>
+    <script src="../html/api.js?v=4" defer></script>
+    <script src="../html/app.js?v=4" defer></script>
+  </head>
+  <body class="page-topics">
+    <div class="app">
+      <aside class="sidebar">
+
+        <nav>
+          <a href="../html/index.html" class="nav-dashboard">
+            <span class="nav-icon">🏠</span><span class="nav-label"> Dashboard</span>
+          </a>
+          <a href="groups.html" class="nav-groups">
+            <span class="nav-icon">👥</span><span class="nav-label"> Nhóm</span>
+          </a>
+          <a href="topics.html" class="nav-topics active">
+            <span class="nav-icon">🏷️</span><span class="nav-label"> Chủ đề</span>
+          </a>
+          <a href="schedules.html" class="nav-schedules">
+            <span class="nav-icon">📅</span><span class="nav-label"> Lịch đăng</span>
+          </a>
+          <a href="logs.html" class="nav-logs">
+            <span class="nav-icon">📋</span><span class="nav-label"> Logs</span>
+          </a>
+        </nav>
+      </aside>
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h2>Quản lý chủ đề</h2>
+            <p class="sub">Các chủ đề nội dung để bot chọn khi lên lịch đăng bài.</p>
+          </div>
+        </header>
+
+        <div id="status"></div>
+
+        <form id="topicForm" class="form-box">
+          <h3>Thêm chủ đề mới</h3>
+          <div class="form-row">
+            <input id="topicName" placeholder="Tên chủ đề" required />
+          </div>
+          <div class="form-row">
+            <textarea id="topicDesc" rows="3" placeholder="Mô tả chủ đề (không bắt buộc)"></textarea>
+          </div>
+          <div class="form-row">
+            <button class="btn btn-primary" type="submit" style="flex: 0 0 auto;">+ Lưu chủ đề</button>
+          </div>
+        </form>
+
+        <div class="panel">
+          <h3>Danh sách chủ đề</h3>
+          <table id="topicsTable">
+            <thead>
+              <tr><th>Tên</th><th>Mô tả</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+
+    <!-- Modal Sửa chủ đề -->
+    <div id="editTopicModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+      <div style="background:var(--bg-card); border-radius:12px; padding:28px; width:480px; max-width:95vw;">
+        <h3 style="margin:0 0 20px;">Sửa chủ đề</h3>
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <label class="field"><span>Tên chủ đề</span><input id="editTopicTen" /></label>
+          <label class="field"><span>Mô tả</span><textarea id="editTopicMoTa" rows="3"></textarea></label>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:20px; justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="document.querySelector('#editTopicModal').style.display='none'">Hủy</button>
+          <button class="btn btn-primary" onclick="submitEditTopic()">Lưu</button>
+        </div>
+      </div>
+    </div>
+    <div id="toastContainer" class="toast-container"></div>
+  </body>
+</html>
