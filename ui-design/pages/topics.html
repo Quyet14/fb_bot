@@ -1,94 +1,358 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quản lý chủ đề · FB Bot</title>
+    <title>Quản lý chủ đề · FB Bot Console</title>
     <script>
       (function () {
         try {
-          if (localStorage.getItem('fbbot-theme') === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
-          }
-        } catch (error) {}
+          var t = localStorage.getItem('fbbot-theme');
+          document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+        } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="../html/styles.css?v=2" />
-    <script src="../html/theme.js?v=2" defer></script>
-    <script src="../html/api.js?v=4" defer></script>
-    <script src="../html/app.js?v=4" defer></script>
+    <link rel="stylesheet" href="../html/css/tokens.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/base.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/components.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/responsive.css?v=202607061201" />
+    <style>
+      .topics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+
+      .topic-card {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        padding: 20px 20px 16px;
+        box-shadow: var(--shadow);
+        display: flex; flex-direction: column; gap: 10px;
+        position: relative; overflow: hidden;
+        transition: transform 0.22s var(--ease), box-shadow 0.22s var(--ease), border-color 0.22s;
+        animation: surfaceIn 0.35s var(--ease) backwards;
+        cursor: default;
+      }
+      .topic-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lift); border-color: var(--c-topics); }
+      .topic-card::before {
+        content: '';
+        position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        background: linear-gradient(90deg, var(--c-topics), var(--c-schedules) 70%, transparent);
+        border-radius: var(--radius) var(--radius) 0 0;
+      }
+      .topic-card::after {
+        content: ''; position: absolute; top: -30%; right: -15%; width: 55%; height: 80%;
+        background: radial-gradient(circle, var(--c-topics), transparent 70%); opacity: 0.07;
+        pointer-events: none; filter: blur(2px);
+      }
+
+      .topic-num {
+        position: absolute; top: 14px; right: 16px;
+        font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+        color: var(--text-faint); background: var(--surface-2);
+        padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border-soft);
+      }
+      .topic-icon {
+        width: 42px; height: 42px; border-radius: 14px;
+        background: var(--c-topics-soft);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; flex-shrink: 0;
+        box-shadow: inset 0 1px 1px var(--glass-rim);
+      }
+      .topic-name { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.3; }
+      .topic-desc {
+        font-size: 12.5px; color: var(--text-muted); line-height: 1.55;
+        flex: 1;
+        display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .topic-actions { display: flex; gap: 8px; margin-top: auto; }
+
+      .form-card {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        padding: 22px 24px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow);
+        animation: surfaceIn 0.4s var(--ease) backwards;
+      }
+      .form-card h3 { margin: 0 0 16px; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+      .field-col { display: flex; flex-direction: column; gap: 12px; }
+
+      .panel-card {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        animation: surfaceIn 0.45s var(--ease) backwards;
+        animation-delay: 0.1s;
+      }
+      .panel-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px 14px;
+        border-bottom: 1px solid var(--border-soft);
+        background: linear-gradient(90deg, var(--bg-soft), transparent);
+      }
+      .panel-head h3 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+      .modal-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        z-index: 5000; align-items: center; justify-content: center;
+      }
+      .modal-overlay.open { display: flex; }
+      .modal-box {
+        background: var(--glass-strong); backdrop-filter: blur(var(--blur-lg)); -webkit-backdrop-filter: blur(var(--blur-lg));
+        border: 1px solid var(--glass-border); border-radius: var(--radius);
+        padding: 28px 28px 24px; width: 480px; max-width: 95vw;
+        box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+        animation: modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+      }
+      @keyframes modalIn { from { opacity:0; transform: scale(0.92) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
+      .modal-box h3 { margin: 0 0 20px; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+      .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+      .page-stat-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+      .mini-stat {
+        background: var(--glass); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border); border-radius: var(--radius-sm);
+        padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+        box-shadow: var(--shadow); animation: surfaceIn 0.35s var(--ease) backwards;
+      }
+      .mini-stat:nth-child(1) { animation-delay:.02s; } .mini-stat:nth-child(2) { animation-delay:.06s; } .mini-stat:nth-child(3) { animation-delay:.10s; }
+      .mini-stat-icon { width:40px; height:40px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; background:var(--accent-soft); box-shadow:inset 0 1px 1px var(--glass-rim); }
+      .mini-stat-body .val { font-family:var(--font-mono); font-size:22px; font-weight:700; color:var(--text); }
+      .mini-stat-body .lbl { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
+    </style>
   </head>
   <body class="page-topics">
-    <div class="app">
-      <aside class="sidebar">
 
-        <nav>
-          <a href="../html/index.html" class="nav-dashboard">
-            <span class="nav-icon">🏠</span><span class="nav-label"> Dashboard</span>
-          </a>
-          <a href="groups.html" class="nav-groups">
-            <span class="nav-icon">👥</span><span class="nav-label"> Nhóm</span>
-          </a>
-          <a href="topics.html" class="nav-topics active">
-            <span class="nav-icon">🏷️</span><span class="nav-label"> Chủ đề</span>
-          </a>
-          <a href="schedules.html" class="nav-schedules">
-            <span class="nav-icon">📅</span><span class="nav-label"> Lịch đăng</span>
-          </a>
-          <a href="logs.html" class="nav-logs">
-            <span class="nav-icon">📋</span><span class="nav-label"> Logs</span>
-          </a>
-        </nav>
-      </aside>
+    <!-- ══ GLOBAL BAR ══ -->
+    <header class="global-bar">
+      <div class="global-bar-left">
+        <a href="../html/dashboard.html" class="global-bar-logo">
+          <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
+          <span class="global-bar-logo-text">FB Bot Console</span>
+        </a>
+        <div class="global-bar-sep"></div>
+        <div class="global-status-dot">
+          <span class="dot dot-success"></span>
+          <span class="global-status-label" data-i18n="bar.online">Online</span>
+        </div>
+      </div>
+      <div class="global-bar-right">
+        <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
+        <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+      </div>
+    </header>
+
+    <div class="app">
+      <div class="sidebar-wrapper" id="sidebarWrapper">
+        <aside class="sidebar" id="sidebar">
+          <nav>
+            <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
+            <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+            <a href="topics.html" class="nav-topics active"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ đề</span></a>
+            <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch đăng</span></a>
+            <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+          </nav>
+          <div class="sidebar-status">
+            <span class="dot dot-success"></span>
+            <div class="sidebar-status-text">
+              <span class="label" data-i18n="common.bot_running">Bot đang chạy</span>
+              <span class="sub" data-i18n="common.version">v1.0.0 · API online</span>
+            </div>
+          </div>
+        </aside>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Thu gọn">
+          <svg viewBox="0 0 7 12"><polyline points="5,1 1,6 5,11"/></svg>
+        </button>
+      </div>
+
       <main class="main">
         <header class="topbar">
           <div>
-            <h2>Quản lý chủ đề</h2>
-            <p class="sub">Các chủ đề nội dung để bot chọn khi lên lịch đăng bài.</p>
+            <span class="eyebrow"><span class="dot"></span data-i18n="topics.eyebrow"> Nội dung</span>
+            <h2 data-i18n="topics.title">Quản lý chủ đề</h2>
+            <p class="sub" data-i18n="topics.sub">Các chủ đề nội dung để bot tự chọn khi lên lịch đăng bài.</p>
+          </div>
+          <div class="topbar-hero-shapes" aria-hidden="true">
+            <div class="hero-shape">🏷️</div>
+            <div class="hero-shape">✍️</div>
+            <div class="hero-shape">💡</div>
           </div>
         </header>
 
+        <div class="page-stat-bar">
+          <div class="mini-stat">
+            <div class="mini-stat-icon">🏷️</div>
+            <div class="mini-stat-body"><div class="val" id="totalTopicsCount">—</div><div class="lbl">Tổng chủ đề</div></div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-icon">📝</div>
+            <div class="mini-stat-body"><div class="val" id="topicsWithDesc">—</div><div class="lbl">Có mô tả</div></div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-icon">🤖</div>
+            <div class="mini-stat-body"><div class="val" id="topicsInSchedule">—</div><div class="lbl">Dùng trong lịch</div></div>
+          </div>
+        </div>
+
         <div id="status"></div>
 
-        <form id="topicForm" class="form-box">
-          <h3>Thêm chủ đề mới</h3>
-          <div class="form-row">
-            <input id="topicName" placeholder="Tên chủ đề" required />
-          </div>
-          <div class="form-row">
-            <textarea id="topicDesc" rows="3" placeholder="Mô tả chủ đề (không bắt buộc)"></textarea>
-          </div>
-          <div class="form-row">
-            <button class="btn btn-primary" type="submit" style="flex: 0 0 auto;">+ Lưu chủ đề</button>
-          </div>
-        </form>
+        <!-- Form thêm chủ đề -->
+        <div class="form-card">
+          <h3><span>➕</span> Thêm chủ đề mới</h3>
+          <form id="topicForm">
+            <div class="field-col">
+              <label class="field">
+                <span>Tên chủ đề</span>
+                <input id="topicName" placeholder="VD: Mẹo nấu ăn, Review công nghệ..." required />
+              </label>
+              <label class="field">
+                <span>Mô tả chủ đề</span>
+                <textarea id="topicDesc" rows="3" placeholder="Mô tả để AI hiểu rõ hơn khi viết nội dung (không bắt buộc)"></textarea>
+              </label>
+              <div style="display:flex; justify-content:flex-end;">
+                <button class="btn btn-primary" type="submit" data-i18n="topics.save">＋ Lưu chủ đề</button>
+              </div>
+            </div>
+          </form>
+        </div>
 
-        <div class="panel">
-          <h3>Danh sách chủ đề</h3>
-          <table id="topicsTable">
-            <thead>
-              <tr><th>Tên</th><th>Mô tả</th><th></th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <!-- Danh sách -->
+        <div class="panel-card">
+          <div class="panel-head">
+            <h3><span>🏷️</span> Danh sách chủ đề <span id="topicsBadge" class="badge badge-idle" style="font-size:11px; margin-left:6px;"></span></h3>
+          </div>
+          <div style="padding: 16px;">
+            <div class="topics-grid" id="topicsGrid">
+              <div style="color:var(--text-faint);font-size:13px;">Đang tải...</div>
+            </div>
+          </div>
+          <!-- fallback table (hidden) -->
+          <table id="topicsTable" style="display:none;"><thead><tr><th>Tên</th><th>Mô tả</th><th></th></tr></thead><tbody></tbody></table>
         </div>
       </main>
     </div>
 
     <!-- Modal Sửa chủ đề -->
-    <div id="editTopicModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
-      <div style="background:var(--bg-card); border-radius:12px; padding:28px; width:480px; max-width:95vw;">
-        <h3 style="margin:0 0 20px;">Sửa chủ đề</h3>
-        <div style="display:flex; flex-direction:column; gap:14px;">
+    <div id="editTopicModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3><span>✏️</span> Sửa chủ đề</h3>
+        <div style="display:flex; flex-direction:column; gap:12px;">
           <label class="field"><span>Tên chủ đề</span><input id="editTopicTen" /></label>
           <label class="field"><span>Mô tả</span><textarea id="editTopicMoTa" rows="3"></textarea></label>
         </div>
-        <div style="display:flex; gap:12px; margin-top:20px; justify-content:flex-end;">
-          <button class="btn btn-secondary" onclick="document.querySelector('#editTopicModal').style.display='none'">Hủy</button>
-          <button class="btn btn-primary" onclick="submitEditTopic()">Lưu</button>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeTopicModal()">Hủy</button>
+          <button class="btn btn-primary" onclick="submitEditTopic()">💾 Lưu</button>
         </div>
       </div>
     </div>
+
     <div id="toastContainer" class="toast-container"></div>
+
+    <script src="../html/theme.js" defer></script>
+    <script src="../html/i18n.js" defer></script>
+    <script src="../html/api.js" defer></script>
+    <script src="../html/app.js" defer></script>
+    <script src="../html/script.js" defer></script>
+    <script>
+      // Sidebar collapse
+      const sw = document.getElementById('sidebarWrapper');
+      const sb = document.getElementById('sidebar');
+      const st = document.getElementById('sidebarToggle');
+      function applyCollapsed(c) {
+        sw?.classList.toggle('collapsed', c); sb?.classList.toggle('collapsed', c);
+        const poly = st?.querySelector('polyline');
+        if (poly) poly.setAttribute('points', c ? '1,1 5,6 1,11' : '5,1 1,6 5,11');
+        localStorage.setItem('fbbot-sidebar', c ? '1' : '0');
+      }
+      applyCollapsed(localStorage.getItem('fbbot-sidebar') === '1');
+      st?.addEventListener('click', () => applyCollapsed(!sw?.classList.contains('collapsed')));
+
+      // Theme
+      function syncThemeBtns() {
+        const light = document.documentElement.getAttribute('data-theme') === 'light';
+        const sb2 = document.getElementById('sidebarThemeBtn');
+        if (sb2) sb2.querySelector('.icon').textContent = light ? '🌙' : '☀️';
+        const tb = document.getElementById('themeBtn');
+        if (tb) tb.textContent = light ? '☀️' : '🌙';
+      }
+      document.getElementById('themeBtn')?.addEventListener('click', () => { window.toggleTheme?.(); syncThemeBtns(); });
+      document.getElementById('sidebarThemeBtn')?.addEventListener('click', () => { window.toggleTheme?.(); syncThemeBtns(); });
+      document.addEventListener('DOMContentLoaded', syncThemeBtns);
+
+      // Modal
+      function closeTopicModal() { document.getElementById('editTopicModal').classList.remove('open'); }
+      document.addEventListener('DOMContentLoaded', () => {
+        window.openEditTopicModal = function(topic) {
+          window._editingTopicId = topic.id;
+          document.getElementById('editTopicTen').value = topic.ten || '';
+          document.getElementById('editTopicMoTa').value = topic.mo_ta || '';
+          document.getElementById('editTopicModal').classList.add('open');
+        };
+      });
+
+      // Topic icons palette
+      const TOPIC_ICONS = ['🏷️','💡','✍️','📰','🎯','🌟','🛒','🍔','💻','🎨','📸','🚀','🎵','🏋️','🌿','💰','📚','🎮'];
+      function topicIcon(name) {
+        let h = 0; for (let c of name) h = (h * 31 + c.charCodeAt(0)) % TOPIC_ICONS.length;
+        return TOPIC_ICONS[h];
+      }
+
+      // Render cards
+      function renderTopicCards() {
+        const grid = document.getElementById('topicsGrid');
+        const topics = window.state?.topics || [];
+        if (!grid) return;
+        if (!topics.length) {
+          grid.innerHTML = '<div style="color:var(--text-faint);font-size:13px;padding:16px;text-align:center;">Chưa có chủ đề nào.</div>';
+          return;
+        }
+        grid.innerHTML = topics.map((t, i) => `
+          <div class="topic-card" style="animation-delay:${0.03 + i * 0.04}s">
+            <span class="topic-num">#${i + 1}</span>
+            <div class="topic-icon">${topicIcon(t.ten)}</div>
+            <div class="topic-name">${escapeHtml(t.ten)}</div>
+            ${t.mo_ta ? `<div class="topic-desc">${escapeHtml(t.mo_ta)}</div>` : '<div class="topic-desc" style="color:var(--text-faint);font-style:italic;">Chưa có mô tả</div>'}
+            <div class="topic-actions">
+              <button data-action="edit-topic" data-id="${t.id}" class="btn" style="flex:1;font-size:12px;padding:7px 0;">✏️ Sửa</button>
+              <button data-action="delete-topic" data-id="${t.id}" class="btn btn-danger" style="flex:1;font-size:12px;padding:7px 0;">🗑 Xóa</button>
+            </div>
+          </div>
+        `).join('');
+        grid.addEventListener('click', window.handleEditOrDelete);
+      }
+
+      function updateTopicStats() {
+        const topics = window.state?.topics || [];
+        const schedules = window.state?.schedules?.posts || [];
+        const usedIds = new Set(schedules.map(s => s.topic?.id).filter(Boolean));
+        document.getElementById('totalTopicsCount').textContent = topics.length;
+        document.getElementById('topicsWithDesc').textContent = topics.filter(t => t.mo_ta).length;
+        document.getElementById('topicsInSchedule').textContent = usedIds.size;
+        const badge = document.getElementById('topicsBadge');
+        if (badge) { badge.textContent = topics.length + ' chủ đề'; badge.className = topics.length ? 'badge badge-success' : 'badge badge-idle'; }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const orig = window.renderTopics;
+        window.renderTopics = function() {
+          orig?.();
+          renderTopicCards();
+          updateTopicStats();
+        };
+      });
+    </script>
   </body>
 </html>

@@ -1,94 +1,468 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quản lý nhóm · FB Bot</title>
+    <title>Quản lý nhóm · FB Bot Console</title>
     <script>
       (function () {
         try {
-          if (localStorage.getItem('fbbot-theme') === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
-          }
-        } catch (error) {}
+          var t = localStorage.getItem('fbbot-theme');
+          document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+        } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="../html/styles.css?v=2" />
-    <script src="../html/theme.js?v=2" defer></script>
-    <script src="../html/api.js?v=4" defer></script>
-    <script src="../html/app.js?v=4" defer></script>
+    <link rel="stylesheet" href="../html/css/tokens.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/base.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/components.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/responsive.css?v=202607061201" />
+    <style>
+      /* ── Page extras ── */
+      .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+
+      .group-card {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.22s var(--ease), box-shadow 0.22s var(--ease), border-color 0.22s;
+        animation: surfaceIn 0.35s var(--ease) backwards;
+      }
+      .group-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lift); border-color: var(--accent); }
+      .group-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--c-groups), var(--c-dashboard) 70%, transparent);
+        border-radius: var(--radius) var(--radius) 0 0;
+      }
+
+      .group-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+      .group-card-name { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.35; }
+      .group-card-url {
+        font-size: 12px; color: var(--text-faint); font-family: var(--font-mono);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        margin-top: 2px;
+      }
+      .group-card-note {
+        font-size: 12.5px; color: var(--text-muted);
+        background: var(--surface-2);
+        border-radius: 8px;
+        padding: 7px 10px;
+        min-height: 30px;
+      }
+      .group-card-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+      .page-stat-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+
+      .mini-stat {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        display: flex; align-items: center; gap: 12px;
+        box-shadow: var(--shadow);
+        animation: surfaceIn 0.35s var(--ease) backwards;
+      }
+      .mini-stat:nth-child(1) { animation-delay: 0.02s; }
+      .mini-stat:nth-child(2) { animation-delay: 0.06s; }
+      .mini-stat:nth-child(3) { animation-delay: 0.10s; }
+
+      .mini-stat-icon {
+        width: 40px; height: 40px; border-radius: 13px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px; flex-shrink: 0;
+        background: var(--accent-soft);
+        box-shadow: inset 0 1px 1px var(--glass-rim);
+      }
+      .mini-stat-body .val { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--text); }
+      .mini-stat-body .lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+
+      /* form enhanced */
+      .form-card {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        padding: 22px 24px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow);
+        animation: surfaceIn 0.4s var(--ease) backwards;
+      }
+      .form-card h3 {
+        margin: 0 0 16px;
+        font-family: var(--font-display);
+        font-size: 15px; font-weight: 700;
+        display: flex; align-items: center; gap: 8px;
+      }
+      .form-card h3 span { font-size: 18px; }
+
+      .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+      .input-group.single { grid-template-columns: 1fr; }
+      .input-group input, .input-group textarea {
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--bg-soft);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 13.5px;
+        transition: border-color .15s, box-shadow .2s;
+        outline: none;
+      }
+      .input-group input:focus, .input-group textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px var(--accent-soft);
+      }
+      .input-group input::placeholder, .input-group textarea::placeholder { color: var(--text-faint); }
+
+      /* Modal */
+      .modal-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 5000;
+        align-items: center; justify-content: center;
+      }
+      .modal-overlay.open { display: flex; }
+      .modal-box {
+        background: var(--glass-strong);
+        backdrop-filter: blur(var(--blur-lg));
+        -webkit-backdrop-filter: blur(var(--blur-lg));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        padding: 28px 28px 24px;
+        width: 480px; max-width: 95vw;
+        box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+        animation: modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+      }
+      @keyframes modalIn { from { opacity:0; transform: scale(0.92) translateY(12px); } to { opacity:1; transform: scale(1) translateY(0); } }
+      .modal-box h3 { margin: 0 0 20px; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+      .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+      /* table enhanced */
+      .panel-card {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        animation: surfaceIn 0.45s var(--ease) backwards;
+        animation-delay: 0.12s;
+      }
+      .panel-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px 14px;
+        border-bottom: 1px solid var(--border-soft);
+        background: linear-gradient(90deg, var(--bg-soft), transparent);
+      }
+      .panel-head h3 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+      .view-toggle { display: flex; gap: 4px; }
+      .view-btn {
+        padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+        border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted);
+        cursor: pointer; transition: all .15s;
+      }
+      .view-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+    </style>
   </head>
   <body class="page-groups">
-    <div class="app">
-      <aside class="sidebar">
 
-        <nav>
-          <a href="../html/index.html" class="nav-dashboard">
-            <span class="nav-icon">🏠</span><span class="nav-label"> Dashboard</span>
-          </a>
-          <a href="groups.html" class="nav-groups active">
-            <span class="nav-icon">👥</span><span class="nav-label"> Nhóm</span>
-          </a>
-          <a href="topics.html" class="nav-topics">
-            <span class="nav-icon">🏷️</span><span class="nav-label"> Chủ đề</span>
-          </a>
-          <a href="schedules.html" class="nav-schedules">
-            <span class="nav-icon">📅</span><span class="nav-label"> Lịch đăng</span>
-          </a>
-          <a href="logs.html" class="nav-logs">
-            <span class="nav-icon">📋</span><span class="nav-label"> Logs</span>
-          </a>
-        </nav>
-      </aside>
+    <!-- ══ GLOBAL BAR ══ -->
+    <header class="global-bar">
+      <div class="global-bar-left">
+        <a href="../html/dashboard.html" class="global-bar-logo">
+          <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
+          <span class="global-bar-logo-text">FB Bot Console</span>
+        </a>
+        <div class="global-bar-sep"></div>
+        <div class="global-status-dot">
+          <span class="dot dot-success"></span>
+          <span class="global-status-label" data-i18n="bar.online">Online</span>
+        </div>
+      </div>
+      <div class="global-bar-right">
+        <button class="global-bar-btn" id="notifBtn" title="Thông báo">
+          🔔
+          <span class="notif-badge" id="notifCount" style="display:none">0</span>
+        </button>
+        <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+      </div>
+    </header>
+
+    <div class="app">
+      <!-- ══ SIDEBAR WRAPPER ══ -->
+      <div class="sidebar-wrapper" id="sidebarWrapper">
+        <aside class="sidebar" id="sidebar">
+
+
+          <nav>
+            <a href="../html/dashboard.html" class="nav-dashboard">
+              <span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span>
+            </a>
+            <a href="groups.html" class="nav-groups active">
+              <span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span>
+            </a>
+            <a href="topics.html" class="nav-topics">
+              <span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ đề</span>
+            </a>
+            <a href="schedules.html" class="nav-schedules">
+              <span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch đăng</span>
+            </a>
+            <a href="logs.html" class="nav-logs">
+              <span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span>
+            </a>
+          </nav>
+
+          <div class="sidebar-status">
+            <span class="dot dot-success"></span>
+            <div class="sidebar-status-text">
+              <span class="label" data-i18n="common.bot_running">Bot đang chạy</span>
+              <span class="sub" data-i18n="common.version">v1.0.0 · API online</span>
+            </div>
+          </div>
+        </aside>
+
+        <button class="sidebar-toggle" id="sidebarToggle" title="Thu gọn">
+          <svg viewBox="0 0 7 12"><polyline points="5,1 1,6 5,11"/></svg>
+        </button>
+      </div>
+
+      <!-- ══ MAIN ══ -->
       <main class="main">
+
         <header class="topbar">
           <div>
-            <h2>Quản lý nhóm</h2>
-            <p class="sub">Danh sách các nhóm Facebook bot sẽ đăng bài, repost và tương tác.</p>
+            <span class="eyebrow"><span class="dot"></span data-i18n="groups.eyebrow"> Quản lý</span>
+            <h2 data-i18n="groups.title">Quản lý nhóm</h2>
+            <p class="sub" data-i18n="groups.sub">Danh sách các nhóm Facebook bot đăng bài, repost và tương tác.</p>
+          </div>
+          <div class="topbar-hero-shapes" aria-hidden="true">
+            <div class="hero-shape">👥</div>
+            <div class="hero-shape">🔗</div>
+            <div class="hero-shape">📌</div>
           </div>
         </header>
 
+        <!-- Stat bar -->
+        <div class="page-stat-bar">
+          <div class="mini-stat">
+            <div class="mini-stat-icon">👥</div>
+            <div class="mini-stat-body">
+              <div class="val" id="totalGroupsCount">—</div>
+              <div class="lbl">Tổng nhóm</div>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-icon">✅</div>
+            <div class="mini-stat-body">
+              <div class="val" id="activeGroupsCount">—</div>
+              <div class="lbl">Đang hoạt động</div>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-icon">📅</div>
+            <div class="mini-stat-body">
+              <div class="val" id="groupScheduleCount">—</div>
+              <div class="lbl">Lịch đang chạy</div>
+            </div>
+          </div>
+        </div>
+
         <div id="status"></div>
 
-        <form id="groupForm" class="form-box">
-          <h3>Thêm nhóm mới</h3>
-          <div class="form-row">
-            <input id="groupName" placeholder="Tên nhóm" required />
-            <input id="groupUrl" placeholder="URL nhóm (facebook.com/groups/...)" required />
-          </div>
-          <div class="form-row">
-            <input id="groupNote" placeholder="Ghi chú (không bắt buộc)" />
-            <button class="btn btn-primary" type="submit" style="flex: 0 0 auto;">+ Lưu nhóm</button>
-          </div>
-        </form>
-
-        <div class="panel">
-          <h3>Danh sách nhóm</h3>
-          <table id="groupsTable">
-            <thead>
-              <tr><th>Tên</th><th>URL</th><th>Ghi chú</th><th></th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <!-- Form thêm nhóm -->
+        <div class="form-card" id="addGroupForm-wrap">
+          <h3><span>➕</span> Thêm nhóm mới</h3>
+          <form id="groupForm">
+            <div class="input-group">
+              <input id="groupName" placeholder="Tên nhóm (VD: Cộng đồng mua bán HN)" required />
+              <input id="groupUrl" placeholder="facebook.com/groups/..." required />
+            </div>
+            <div class="input-group single" style="margin-bottom:14px;">
+              <input id="groupNote" placeholder="Ghi chú (không bắt buộc)" />
+            </div>
+            <div style="display:flex; justify-content:flex-end;">
+              <button class="btn btn-primary" type="submit" data-i18n="groups.save">＋ Lưu nhóm</button>
+            </div>
+          </form>
         </div>
+
+        <!-- Danh sách nhóm -->
+        <div class="panel-card">
+          <div class="panel-head">
+            <h3><span>👥</span> Danh sách nhóm <span id="groupBadge" class="badge badge-idle" style="font-size:11px; margin-left:6px;"></span></h3>
+            <div class="view-toggle">
+              <button class="view-btn active" id="viewCard" onclick="setView('card')">⊞ Thẻ</button>
+              <button class="view-btn" id="viewTable" onclick="setView('table')">☰ Bảng</button>
+            </div>
+          </div>
+
+          <!-- Card view -->
+          <div id="groupCardsView" style="padding: 16px;">
+            <div class="groups-grid" id="groupCardsGrid">
+              <div style="color:var(--text-faint); font-size:13px; padding:16px;">Đang tải...</div>
+            </div>
+          </div>
+
+          <!-- Table view -->
+          <div id="groupTableView" style="display:none;">
+            <table id="groupsTable">
+              <thead>
+                <tr><th>Tên nhóm</th><th>URL</th><th>Ghi chú</th><th style="width:140px;"></th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
       </main>
-    </div>
+    </div><!-- /.app -->
 
     <!-- Modal Sửa nhóm -->
-    <div id="editGroupModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
-      <div style="background:var(--bg-card); border-radius:12px; padding:28px; width:480px; max-width:95vw;">
-        <h3 style="margin:0 0 20px;">Sửa nhóm</h3>
-        <div class="field-grid" style="display:flex; flex-direction:column; gap:14px;">
+    <div id="editGroupModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3><span>✏️</span> Sửa nhóm</h3>
+        <div style="display:flex; flex-direction:column; gap:12px;">
           <label class="field"><span>Tên nhóm</span><input id="editGroupTen" /></label>
           <label class="field"><span>URL nhóm</span><input id="editGroupUrl" /></label>
           <label class="field"><span>Ghi chú</span><input id="editGroupGhiChu" /></label>
         </div>
-        <div style="display:flex; gap:12px; margin-top:20px; justify-content:flex-end;">
-          <button class="btn btn-secondary" onclick="document.querySelector('#editGroupModal').style.display='none'">Hủy</button>
-          <button class="btn btn-primary" onclick="submitEditGroup()">Lưu</button>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeGroupModal()">Hủy</button>
+          <button class="btn btn-primary" onclick="submitEditGroup()">💾 Lưu</button>
         </div>
       </div>
     </div>
+
     <div id="toastContainer" class="toast-container"></div>
+
+    <script src="../html/theme.js" defer></script>
+    <script src="../html/i18n.js" defer></script>
+    <script src="../html/api.js" defer></script>
+    <script src="../html/app.js" defer></script>
+    <script src="../html/script.js" defer></script>
+    <script>
+      // ── Sidebar collapse ──
+      const sw = document.getElementById('sidebarWrapper');
+      const sb = document.getElementById('sidebar');
+      const st = document.getElementById('sidebarToggle');
+      const svg = st?.querySelector('svg');
+
+      function applyCollapsed(c) {
+        sw?.classList.toggle('collapsed', c);
+        sb?.classList.toggle('collapsed', c);
+        if (svg) svg.querySelector('polyline').setAttribute('points', c ? '1,1 5,6 1,11' : '5,1 1,6 5,11');
+        localStorage.setItem('fbbot-sidebar', c ? '1' : '0');
+      }
+      applyCollapsed(localStorage.getItem('fbbot-sidebar') === '1');
+      st?.addEventListener('click', () => applyCollapsed(!sw?.classList.contains('collapsed')));
+
+      // ── Theme ──
+      function syncThemeBtns() {
+        const light = document.documentElement.getAttribute('data-theme') === 'light';
+        document.querySelectorAll('#themeBtn, #sidebarThemeBtn').forEach(b => {
+          const icon = b.querySelector('.icon') || b;
+          if (b.id === 'sidebarThemeBtn') b.querySelector('.icon').textContent = light ? '🌙' : '☀️';
+          else b.textContent = light ? '☀️' : '🌙';
+        });
+      }
+      document.getElementById('themeBtn')?.addEventListener('click', () => { window.toggleTheme?.(); syncThemeBtns(); });
+      document.getElementById('sidebarThemeBtn')?.addEventListener('click', () => { window.toggleTheme?.(); syncThemeBtns(); });
+      document.addEventListener('DOMContentLoaded', syncThemeBtns);
+
+      // ── View toggle ──
+      let _currentView = 'card';
+      function setView(v) {
+        _currentView = v;
+        document.getElementById('groupCardsView').style.display = v === 'card' ? '' : 'none';
+        document.getElementById('groupTableView').style.display = v === 'table' ? '' : 'none';
+        document.getElementById('viewCard').classList.toggle('active', v === 'card');
+        document.getElementById('viewTable').classList.toggle('active', v === 'table');
+        if (v === 'card') renderGroupCards();
+      }
+
+      // ── Modal helpers ──
+      function closeGroupModal() {
+        document.getElementById('editGroupModal').classList.remove('open');
+      }
+      // Override để dùng class thay style
+      window.__origOpenEditGroupModal = window.openEditGroupModal;
+      document.addEventListener('DOMContentLoaded', () => {
+        window.openEditGroupModal = function(group) {
+          window._editingGroupId = group.id;
+          document.getElementById('editGroupTen').value = group.ten || '';
+          document.getElementById('editGroupUrl').value = group.url || '';
+          document.getElementById('editGroupGhiChu').value = group.ghi_chu || '';
+          document.getElementById('editGroupModal').classList.add('open');
+        };
+      });
+
+      // ── Card renderer ──
+      function renderGroupCards() {
+        const grid = document.getElementById('groupCardsGrid');
+        const groups = window.state?.groups || [];
+        if (!grid) return;
+        if (!groups.length) {
+          grid.innerHTML = '<div style="color:var(--text-faint);font-size:13px;padding:16px;text-align:center;">Chưa có nhóm nào. Thêm nhóm đầu tiên!</div>';
+          return;
+        }
+        grid.innerHTML = groups.map((g, i) => `
+          <div class="group-card" style="animation-delay:${0.03 + i * 0.04}s">
+            <div class="group-card-head">
+              <div>
+                <div class="group-card-name">${escapeHtml(g.ten)}</div>
+                <div class="group-card-url">${escapeHtml(g.url)}</div>
+              </div>
+              <span class="badge badge-success" style="flex-shrink:0;"><span class="dot dot-success"></span> Active</span>
+            </div>
+            ${g.ghi_chu ? `<div class="group-card-note">${escapeHtml(g.ghi_chu)}</div>` : ''}
+            <div class="group-card-actions">
+              <button data-action="edit-group" data-id="${g.id}" class="btn" style="flex:1;font-size:12px;padding:7px 0;">✏️ Sửa</button>
+              <button data-action="delete-group" data-id="${g.id}" class="btn btn-danger" style="flex:1;font-size:12px;padding:7px 0;">🗑 Xóa</button>
+            </div>
+          </div>
+        `).join('');
+        grid.addEventListener('click', window.handleEditOrDelete);
+      }
+
+      // ── Update stats ──
+      function updateGroupStats() {
+        const groups = window.state?.groups || [];
+        const schedules = window.state?.schedules;
+        const totalSched = (schedules?.posts?.length || 0) + (schedules?.reposts?.length || 0) + (schedules?.interacts?.length || 0);
+        const badge = document.getElementById('groupBadge');
+        document.getElementById('totalGroupsCount').textContent = groups.length;
+        document.getElementById('activeGroupsCount').textContent = groups.length;
+        document.getElementById('groupScheduleCount').textContent = totalSched;
+        if (badge) { badge.textContent = groups.length + ' nhóm'; badge.className = groups.length ? 'badge badge-success' : 'badge badge-idle'; }
+      }
+
+      // Patch renderGroups to also render cards + stats
+      document.addEventListener('DOMContentLoaded', () => {
+        const origRender = window.renderGroups;
+        window.renderGroups = function() {
+          origRender?.();
+          renderGroupCards();
+          updateGroupStats();
+        };
+      });
+    </script>
   </body>
 </html>

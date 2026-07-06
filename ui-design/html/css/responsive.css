@@ -11,3 +11,20 @@
   .sidebar { width: 100%; }
   .main { padding: 6px 20px 32px; }
 }
+
+/* Lighter blur on small screens keeps scrolling smooth on low-power
+   devices, without losing the glass look. */
+@media (max-width: 600px) {
+  :root { --blur: 12px; }
+}
+
+/* Respect the OS-level motion preference: kill every animation and
+   transition in one place instead of chasing each keyframe. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

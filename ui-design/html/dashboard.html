@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard · FB Bot Console</title>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('fbbot-theme');
+          document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="css/tokens.css?v=202607061201" />
+    <link rel="stylesheet" href="css/base.css?v=202607061201" />
+    <link rel="stylesheet" href="css/components.css?v=202607061201" />
+    <link rel="stylesheet" href="css/responsive.css?v=202607061201" />
+    <style>
+      /* ── Dashboard extras ── */
+      .stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+
+      .stat-card-v2 {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        padding: 18px 20px 16px;
+        display: flex; align-items: center; gap: 14px;
+        box-shadow: var(--shadow);
+        position: relative; overflow: hidden;
+        transition: transform .22s var(--ease), box-shadow .22s, border-color .22s;
+        animation: surfaceIn 0.35s var(--ease) backwards;
+      }
+      .stat-card-v2:hover { transform: translateY(-4px); box-shadow: var(--shadow-lift); }
+      .stat-card-v2:nth-child(1) { animation-delay:.02s; border-top: 2px solid var(--c-groups); }
+      .stat-card-v2:nth-child(2) { animation-delay:.06s; border-top: 2px solid var(--c-schedules); }
+      .stat-card-v2:nth-child(3) { animation-delay:.10s; border-top: 2px solid var(--c-dashboard); }
+      .stat-card-v2:nth-child(4) { animation-delay:.14s; border-top: 2px solid var(--c-logs); }
+
+      .stat-icon-v2 {
+        width: 52px; height: 52px; border-radius: 18px;
+        display: flex; align-items: center; justify-content: center; font-size: 22px;
+        flex-shrink: 0; position: relative; overflow: hidden;
+        box-shadow: inset 0 1px 1px var(--glass-rim), 0 10px 20px -8px currentColor;
+        transition: transform .25s var(--ease-spring);
+      }
+      .stat-icon-v2::before {
+        content: ''; position: absolute; top: 2px; left: 4px; right: 4px; height: 44%;
+        border-radius: 10px 10px 50% 50% / 10px 10px 70% 70%;
+        background: linear-gradient(180deg, var(--glass-rim), transparent); opacity: .5; pointer-events: none;
+      }
+      .stat-card-v2:hover .stat-icon-v2 { transform: scale(1.1) rotate(-6deg); }
+      .stat-card-v2:nth-child(1) .stat-icon-v2 { background: var(--c-groups-soft); color: var(--c-groups); }
+      .stat-card-v2:nth-child(2) .stat-icon-v2 { background: var(--c-schedules-soft); color: var(--c-schedules); }
+      .stat-card-v2:nth-child(3) .stat-icon-v2 { background: var(--c-dashboard-soft); color: var(--c-dashboard); }
+      .stat-card-v2:nth-child(4) .stat-icon-v2 { background: var(--c-logs-soft); color: var(--c-logs); }
+
+      .stat-body-v2 .lbl { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
+      .stat-body-v2 .val { font-family: var(--font-mono); font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+      .stat-body-v2 .trend { font-size: 11px; color: var(--text-faint); margin-top: 4px; }
+
+      /* Quick links */
+      .quick-links {
+        display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+        margin-bottom: 22px;
+      }
+      .quick-link {
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        padding: 16px 8px; border-radius: var(--radius-sm);
+        background: var(--glass); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        text-decoration: none; color: var(--text-muted); font-size: 12px; font-weight: 600;
+        transition: all .2s var(--ease); text-align: center; box-shadow: var(--shadow);
+        animation: surfaceIn .4s var(--ease) backwards;
+      }
+      .quick-link:hover { background: var(--surface-2); border-color: var(--accent); color: var(--text); transform: translateY(-3px); box-shadow: 0 10px 24px -10px var(--accent); }
+      .quick-link .ql-icon {
+        width: 38px; height: 38px; border-radius: 13px; display: flex; align-items: center; justify-content: center;
+        font-size: 18px; background: var(--accent-soft); box-shadow: inset 0 1px 1px var(--glass-rim);
+        transition: transform .25s var(--ease-spring);
+      }
+      .quick-link:hover .ql-icon { transform: scale(1.15) rotate(-8deg); }
+      .quick-link:nth-child(1) { animation-delay:.05s; } .quick-link:nth-child(2) { animation-delay:.09s; }
+      .quick-link:nth-child(3) { animation-delay:.13s; } .quick-link:nth-child(4) { animation-delay:.17s; }
+      .quick-link:nth-child(5) { animation-delay:.21s; }
+
+      /* Main grid */
+      .dashboard-main-grid {
+        display: grid; grid-template-columns: 1fr 360px; gap: 18px; align-items: start;
+      }
+
+      /* Panel */
+      .dash-panel {
+        background: var(--glass); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border); border-radius: var(--radius);
+        overflow: hidden; box-shadow: var(--shadow);
+        animation: surfaceIn .5s var(--ease) backwards; animation-delay: .15s;
+      }
+      .dash-panel-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 18px 12px; border-bottom: 1px solid var(--border-soft);
+        background: linear-gradient(90deg, var(--bg-soft), transparent);
+      }
+      .dash-panel-head h3 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+      /* Upcoming panel */
+      .upcoming-section {
+        animation: surfaceIn .5s var(--ease) backwards; animation-delay: .2s;
+      }
+      .upcoming-list { padding: 6px 0; }
+
+      /* Bot status hero */
+      .bot-status-hero {
+        background: linear-gradient(135deg, var(--surface-2), var(--glass));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        display: flex; align-items: center; gap: 14px;
+        margin-bottom: 22px;
+        box-shadow: var(--shadow);
+        animation: surfaceIn .3s var(--ease) backwards;
+      }
+      .bot-status-pulse {
+        width: 44px; height: 44px; border-radius: 50%;
+        background: var(--success-soft); display: flex; align-items: center; justify-content: center;
+        font-size: 20px; flex-shrink: 0;
+        box-shadow: 0 0 0 6px rgba(52, 211, 153, 0.15);
+        animation: dotPulse 2.4s ease-in-out infinite;
+      }
+      .bot-status-info { flex: 1; }
+      .bot-status-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+      .bot-status-sub { font-size: 12.5px; color: var(--text-muted); }
+
+      @media (max-width: 960px) {
+        .stat-cards { grid-template-columns: repeat(2,1fr); }
+        .dashboard-main-grid { grid-template-columns: 1fr; }
+        .quick-links { grid-template-columns: repeat(3,1fr); }
+      }
+      @media (max-width: 560px) {
+        .quick-links { grid-template-columns: repeat(2,1fr); }
+      }
+    </style>
+  </head>
+  <body class="page-dashboard">
+
+    <!-- ══ GLOBAL BAR ══ -->
+    <header class="global-bar">
+      <div class="global-bar-left">
+        <a href="index.html" class="global-bar-logo">
+          <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
+          <span class="global-bar-logo-text">FB Bot Console</span>
+        </a>
+        <div class="global-bar-sep"></div>
+        <div class="global-status-dot">
+          <span class="dot dot-success"></span>
+          <span class="global-status-label" data-i18n="bar.online">Online</span>
+        </div>
+      </div>
+      <div class="global-bar-right">
+        <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
+        <a href="../pages/settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="../pages/profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+      </div>
+    </header>
+
+    <div class="app">
+      <div class="sidebar-wrapper" id="sidebarWrapper">
+        <aside class="sidebar" id="sidebar">
+          <nav>
+            <a href="dashboard.html" class="nav-dashboard active"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
+            <a href="../pages/groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+            <a href="../pages/topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ đề</span></a>
+            <a href="../pages/schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch đăng</span></a>
+            <a href="../pages/logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+          </nav>
+          <div class="sidebar-status">
+            <span class="dot dot-success"></span>
+            <div class="sidebar-status-text">
+              <span class="label" data-i18n="common.bot_running">Bot đang chạy</span>
+              <span class="sub" data-i18n="common.version">v1.0.0 · API online</span>
+            </div>
+          </div>
+        </aside>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Thu gọn">
+          <svg viewBox="0 0 7 12"><polyline points="5,1 1,6 5,11"/></svg>
+        </button>
+      </div>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow"><span class="dot"></span data-i18n="dash.eyebrow"> Tổng quan</span>
+            <h2 data-i18n="dash.title">Dashboard</h2>
+            <p class="sub" data-i18n="dash.sub">Theo dõi hoạt động của bot và quản lý toàn bộ hệ thống từ đây.</p>
+          </div>
+          <div class="topbar-hero-shapes" aria-hidden="true">
+            <div class="hero-shape">🏠</div>
+            <div class="hero-shape">📊</div>
+            <div class="hero-shape">🤖</div>
+          </div>
+        </header>
+
+        <!-- Bot status banner -->
+        <div class="bot-status-hero">
+          <div class="bot-status-pulse">🤖</div>
+          <div class="bot-status-info">
+            <div class="bot-status-title" data-i18n="dash.bot_running">Hệ thống đang hoạt động</div>
+            <div class="bot-status-sub">Tất cả dịch vụ online · Lần cập nhật cuối: <span id="lastUpdated">—</span></div>
+          </div>
+          <span id="botStatus" class="badge badge-idle"><span class="dot dot-idle"></span> Chưa có dữ liệu</span>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="stat-cards">
+          <div class="stat-card-v2">
+            <div class="stat-icon-v2">👥</div>
+            <div class="stat-body-v2">
+              <div class="lbl" data-i18n="dash.stat_groups">Nhóm FB</div>
+              <div class="val" id="dashboardGroupCount">—</div>
+              <div class="trend" data-i18n="dash.managing">đang quản lý</div>
+            </div>
+          </div>
+          <div class="stat-card-v2">
+            <div class="stat-icon-v2">📅</div>
+            <div class="stat-body-v2">
+              <div class="lbl" data-i18n="dash.stat_schedules">Lịch chạy</div>
+              <div class="val" id="dashboardScheduleCount">—</div>
+              <div class="trend" data-i18n="dash.total_sched">tổng lịch</div>
+            </div>
+          </div>
+          <div class="stat-card-v2">
+            <div class="stat-icon-v2">✅</div>
+            <div class="stat-body-v2">
+              <div class="lbl" data-i18n="dash.stat_today">Thành công hôm nay</div>
+              <div class="val" id="dashboardTodayCount">—</div>
+              <div class="trend" data-i18n="dash.runs_ok">lần chạy OK</div>
+            </div>
+          </div>
+          <div class="stat-card-v2">
+            <div class="stat-icon-v2">⚠️</div>
+            <div class="stat-body-v2">
+              <div class="lbl" data-i18n="dash.stat_errors">Lỗi hôm nay</div>
+              <div class="val" id="dashboardErrorCount">—</div>
+              <div class="trend" data-i18n="dash.need_check">cần xem lại</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick links -->
+        <div class="quick-links">
+          <a href="../pages/groups.html" class="quick-link">
+            <div class="ql-icon" style="background:var(--c-groups-soft)">👥</div>
+            Quản lý nhóm
+          </a>
+          <a href="../pages/topics.html" class="quick-link">
+            <div class="ql-icon" style="background:var(--c-topics-soft)">🏷️</div>
+            Chủ đề AI
+          </a>
+          <a href="../pages/schedules.html" class="quick-link">
+            <div class="ql-icon" style="background:var(--c-schedules-soft)">📅</div>
+            Lịch đăng
+          </a>
+          <a href="../pages/logs.html" class="quick-link">
+            <div class="ql-icon" style="background:var(--c-logs-soft)">📋</div>
+            Xem Logs
+          </a>
+          <a href="../pages/schedules.html?mode=create" class="quick-link">
+            <div class="ql-icon" style="background:var(--c-dashboard-soft)">➕</div>
+            Tạo lịch mới
+          </a>
+        </div>
+
+        <!-- Main grid -->
+        <div class="dashboard-main-grid">
+
+          <!-- Recent logs -->
+          <div class="dash-panel">
+            <div class="dash-panel-head">
+              <h3><span>📋</span> Hoạt động gần đây</h3>
+              <a href="../pages/logs.html" class="panel-link" data-i18n="dash.see_all">Xem tất cả →</a>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Thời gian</th>
+                  <th>Loại</th>
+                  <th>Trạng thái</th>
+                  <th>Chi tiết</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardRecentLogs">
+                <tr><td colspan="4" style="text-align:center;color:var(--text-faint);padding:24px;">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Upcoming schedules -->
+          <div class="upcoming-section">
+            <div class="dash-panel" style="margin-bottom:14px;">
+              <div class="dash-panel-head">
+                <h3><span>⏰</span> Lịch sắp chạy</h3>
+                <a href="../pages/schedules.html" class="panel-link" data-i18n="dash.manage">Quản lý →</a>
+              </div>
+              <div class="upcoming-list" id="dashboardUpcoming">
+                <div style="text-align:center;color:var(--text-faint);font-size:13px;padding:20px;">Đang tải...</div>
+              </div>
+            </div>
+
+            <!-- Summary panel -->
+            <div class="dash-panel">
+              <div class="dash-panel-head">
+                <h3><span>📊</span> Tóm tắt hệ thống</h3>
+              </div>
+              <div style="padding: 10px 0;">
+                <div class="upcoming-item">
+                  <span class="upcoming-dot" style="background:var(--c-groups)"></span>
+                  <span class="upcoming-time">Nhóm</span>
+                  <span class="upcoming-desc" id="summaryGroups">—</span>
+                </div>
+                <div class="upcoming-item">
+                  <span class="upcoming-dot" style="background:var(--c-topics)"></span>
+                  <span class="upcoming-time">Chủ đề</span>
+                  <span class="upcoming-desc" id="summaryTopics">—</span>
+                </div>
+                <div class="upcoming-item">
+                  <span class="upcoming-dot" style="background:var(--c-schedules)"></span>
+                  <span class="upcoming-time">Lịch</span>
+                  <span class="upcoming-desc" id="summarySchedules">—</span>
+                </div>
+                <div class="upcoming-item">
+                  <span class="upcoming-dot" style="background:var(--c-logs)"></span>
+                  <span class="upcoming-time">Logs</span>
+                  <span class="upcoming-desc" id="summaryLogs">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /.dashboard-main-grid -->
+      </main>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="theme.js" defer></script>
+    <script src="i18n.js" defer></script>
+    <script src="auth.js"></script>
+    <script src="api.js" defer></script>
+    <script src="app.js" defer></script>
+    <script src="script.js" defer></script>
+    <script>
+      // Sidebar collapse
+      const sw = document.getElementById('sidebarWrapper'), sb = document.getElementById('sidebar'), st = document.getElementById('sidebarToggle');
+      function applyCollapsed(c) {
+        sw?.classList.toggle('collapsed',c); sb?.classList.toggle('collapsed',c);
+        const p = st?.querySelector('polyline'); if(p) p.setAttribute('points',c?'1,1 5,6 1,11':'5,1 1,6 5,11');
+        localStorage.setItem('fbbot-sidebar',c?'1':'0');
+      }
+      applyCollapsed(localStorage.getItem('fbbot-sidebar')==='1');
+      st?.addEventListener('click',()=>applyCollapsed(!sw?.classList.contains('collapsed')));
+
+      // Theme
+      function syncThemeBtns() {
+        const light = document.documentElement.getAttribute('data-theme')==='light';
+        const sb2 = document.getElementById('sidebarThemeBtn'); if(sb2) sb2.querySelector('.icon').textContent=light?'🌙':'☀️';
+        const tb = document.getElementById('themeBtn'); if(tb) tb.textContent=light?'☀️':'🌙';
+      }
+      document.getElementById('themeBtn')?.addEventListener('click',()=>{window.toggleTheme?.();syncThemeBtns();});
+      document.getElementById('sidebarThemeBtn')?.addEventListener('click',()=>{window.toggleTheme?.();syncThemeBtns();});
+      document.addEventListener('DOMContentLoaded',syncThemeBtns);
+
+      // Update last-updated time
+      document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('vi-VN');
+
+      // Auth guard — chạy trước loadData
+      document.addEventListener('DOMContentLoaded', async () => {
+        await Auth.guardPage();
+      });
+
+      // Patch dashboard summary to also fill summary panel
+      document.addEventListener('DOMContentLoaded', () => {
+        const orig = window.renderDashboardSummary || window._renderDashboardEnhanced;
+        window.renderDashboardSummary = function() {
+          // Call original
+          if (typeof window._renderDashboardEnhanced === 'function') window._renderDashboardEnhanced();
+          // Fill summary cards
+          const g = window.state?.groups?.length ?? '—';
+          const t = window.state?.topics?.length ?? '—';
+          const s = window.state?.schedules;
+          const total = s ? (s.posts?.length||0)+(s.reposts?.length||0)+(s.interacts?.length||0) : '—';
+          const l = window.state?.logs?.length ?? '—';
+          const el1 = document.getElementById('summaryGroups'); if(el1) el1.textContent = g + ' nhóm';
+          const el2 = document.getElementById('summaryTopics'); if(el2) el2.textContent = t + ' chủ đề';
+          const el3 = document.getElementById('summarySchedules'); if(el3) el3.textContent = total + ' lịch';
+          const el4 = document.getElementById('summaryLogs'); if(el4) el4.textContent = l + ' bản ghi';
+          // Update last-updated
+          document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('vi-VN');
+        };
+      });
+    </script>
+  </body>
+</html>

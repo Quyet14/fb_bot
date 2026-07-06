@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng ký · FB Bot Console</title>
+  <script>
+    (function () {
+      try { var t = localStorage.getItem('fbbot-theme'); document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light'); } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="/html/css/tokens.css" />
+  <link rel="stylesheet" href="/html/css/base.css" />
+  <link rel="stylesheet" href="/html/css/components.css" />
+  <style>
+    html, body { height:100%; margin:0; display:flex; flex-direction:column; min-height:100vh; }
+
+    .auth-bg {
+      flex:1; display:flex; align-items:center; justify-content:center;
+      padding:24px 16px; background:var(--bg); position:relative; overflow:hidden;
+    }
+    .auth-bg::before, .auth-bg::after {
+      content:''; position:absolute; border-radius:50%;
+      filter:blur(90px); opacity:0.15; pointer-events:none; animation-timing-function:ease-in-out; animation-iteration-count:infinite; animation-direction:alternate;
+    }
+    .auth-bg::before { width:520px;height:520px; background:radial-gradient(circle,#a78bfa,#34d399); top:-130px;right:-130px; animation:blob1 14s; }
+    .auth-bg::after  { width:420px;height:420px; background:radial-gradient(circle,#38bdf8,#f472b6); bottom:-110px;left:-110px; animation:blob2 17s; }
+    @keyframes blob1 { to { transform:translate(-60px,50px) scale(1.12); } }
+    @keyframes blob2 { to { transform:translate(50px,-40px) scale(1.06); } }
+
+    .auth-card {
+      background:var(--glass); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+      border:1px solid var(--glass-border); border-radius:var(--radius);
+      padding:36px 32px 28px; width:100%; max-width:440px;
+      box-shadow:var(--shadow-lift); position:relative; z-index:1;
+      animation:surfaceIn .4s var(--ease) backwards;
+    }
+
+    .auth-title { font-size:22px;font-weight:700;margin:0 0 4px;color:var(--text); }
+    .auth-sub   { font-size:13.5px;color:var(--text-muted);margin:0 0 22px; }
+
+    .field { margin-bottom:14px; }
+    .field label { display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:5px; }
+    .field input { width:100%;box-sizing:border-box; }
+
+    /* Password strength bar */
+    .pw-strength { margin-top:6px; }
+    .pw-bar { height:4px;border-radius:2px;background:var(--border-soft);overflow:hidden;margin-bottom:4px; }
+    .pw-bar-fill { height:100%;border-radius:2px;transition:width .3s,background .3s;width:0%; }
+    .pw-hint { font-size:11.5px;color:var(--text-faint); }
+    .pw-hint span { display:inline-block;margin-right:8px; }
+    .pw-hint span.ok { color:var(--success,#34d399); }
+
+    /* Requirements checklist */
+    .pw-rules { list-style:none;padding:0;margin:6px 0 0;font-size:12px;color:var(--text-faint); }
+    .pw-rules li { display:flex;align-items:center;gap:6px;margin-bottom:3px; }
+    .pw-rules li .chk { font-size:13px;width:16px;text-align:center; }
+    .pw-rules li.pass { color:var(--success,#34d399); }
+    .pw-rules li.pass .chk::before { content:'✓'; }
+    .pw-rules li:not(.pass) .chk::before { content:'○'; }
+
+    /* Error block */
+    .auth-error {
+      background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+      border-radius:var(--radius-sm);color:var(--danger,#ef4444);
+      font-size:13px;padding:10px 14px;margin-bottom:14px;display:none;
+    }
+    .auth-error.show { display:block; }
+
+    .btn-submit { width:100%;margin-top:6px;padding:13px;font-size:15px;font-weight:700; }
+
+    /* Social divider */
+    .or-divider {
+      display:flex;align-items:center;gap:10px;margin:20px 0;
+      color:var(--text-faint);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+    }
+    .or-divider::before,.or-divider::after { content:'';flex:1;height:1px;background:var(--border-soft); }
+
+    /* Social buttons */
+    .social-btns { display:flex;gap:10px; }
+    .btn-social {
+      flex:1; display:flex;align-items:center;justify-content:center;gap:8px;
+      padding:11px 12px; border-radius:var(--radius-sm);
+      background:var(--glass); backdrop-filter:blur(8px);
+      border:1px solid var(--glass-border); color:var(--text);
+      font-size:13.5px;font-weight:600;cursor:pointer;
+      transition:background .2s,border-color .2s,transform .15s;
+      text-decoration:none;
+    }
+    .btn-social:hover { background:var(--surface-2);border-color:var(--accent);transform:translateY(-2px); }
+    .btn-social .s-icon { font-size:18px;line-height:1; }
+    .btn-social.google { }
+    .btn-social.facebook { }
+
+    /* Show/hide password */
+    .pw-toggle-wrap { position:relative; }
+    .pw-toggle-wrap input { padding-right:40px; }
+    .pw-toggle {
+      position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-faint);
+      padding:2px;line-height:1;
+    }
+    .pw-toggle:hover { color:var(--text); }
+
+    .auth-footer { margin-top:18px;text-align:center;font-size:13px;color:var(--text-muted); }
+    .auth-footer a { color:var(--accent);text-decoration:none;font-weight:600; }
+    .auth-footer a:hover { text-decoration:underline; }
+
+    .disabled-notice {
+      text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;
+      background:var(--surface-2);border-radius:var(--radius-sm);margin-bottom:16px;
+    }
+  </style>
+</head>
+<body class="page-auth">
+
+  <header class="global-bar" style="position:sticky;top:0;z-index:1000;">
+    <div class="global-bar-left">
+      <a href="dashboard.html" class="global-bar-logo">
+        <span style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🤖</span>
+        <span class="global-bar-logo-text">FB Bot Console</span>
+      </a>
+    </div>
+    <div class="global-bar-right"></div>
+  </header>
+
+  <div class="auth-bg">
+    <div class="auth-card">
+      <h1 class="auth-title">✨ Tạo tài khoản</h1>
+      <p class="auth-sub">Điền thông tin để tạo tài khoản quản trị viên mới.</p>
+
+      <div class="auth-error" id="authError" role="alert"></div>
+
+      <div id="disabledNotice" class="disabled-notice" style="display:none;">
+        🔒 Đăng ký tài khoản mới đã bị tắt.<br/>
+        <small style="margin-top:6px;display:block;">Liên hệ quản trị viên để được cấp tài khoản.</small>
+      </div>
+
+      <form id="registerForm" novalidate>
+
+        <!-- Họ và tên -->
+        <div class="field">
+          <label for="regFullName">Họ và tên</label>
+          <input id="regFullName" name="full_name" type="text" autocomplete="name" placeholder="Nguyễn Văn A" />
+        </div>
+
+        <!-- Email -->
+        <div class="field">
+          <label for="regEmail">Email <span style="color:var(--text-faint);font-weight:400;">(tuỳ chọn)</span></label>
+          <input id="regEmail" name="email" type="email" autocomplete="email" placeholder="you@example.com" />
+        </div>
+
+        <!-- Username -->
+        <div class="field">
+          <label for="regUsername">Tên đăng nhập <span style="color:var(--danger,#ef4444);">*</span></label>
+          <input id="regUsername" name="username" type="text" autocomplete="username"
+                 placeholder="admin" required autofocus />
+        </div>
+
+        <!-- Password -->
+        <div class="field">
+          <label for="regPassword">Mật khẩu <span style="color:var(--danger,#ef4444);">*</span></label>
+          <div class="pw-toggle-wrap">
+            <input id="regPassword" name="password" type="password"
+                   autocomplete="new-password" placeholder="Tối thiểu 8 ký tự" required />
+            <button type="button" class="pw-toggle" onclick="togglePw('regPassword',this)" title="Hiện/ẩn mật khẩu">👁</button>
+          </div>
+          <!-- Strength bar -->
+          <div class="pw-strength" id="pwStrength" style="display:none;">
+            <div class="pw-bar"><div class="pw-bar-fill" id="pwBarFill"></div></div>
+            <ul class="pw-rules" id="pwRules">
+              <li id="rule-len"><span class="chk"></span>Ít nhất 8 ký tự</li>
+              <li id="rule-upper"><span class="chk"></span>Có chữ hoa (A-Z)</li>
+              <li id="rule-lower"><span class="chk"></span>Có chữ thường (a-z)</li>
+              <li id="rule-digit"><span class="chk"></span>Có chữ số (0-9)</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="field">
+          <label for="regConfirm">Xác nhận mật khẩu <span style="color:var(--danger,#ef4444);">*</span></label>
+          <div class="pw-toggle-wrap">
+            <input id="regConfirm" name="confirm_password" type="password"
+                   autocomplete="new-password" placeholder="Nhập lại mật khẩu" required />
+            <button type="button" class="pw-toggle" onclick="togglePw('regConfirm',this)" title="Hiện/ẩn mật khẩu">👁</button>
+          </div>
+          <div id="confirmHint" style="font-size:12px;margin-top:4px;display:none;"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-submit" id="registerBtn">
+          Tạo tài khoản →
+        </button>
+      </form>
+
+      <!-- Social login -->
+      <div class="or-divider">hoặc đăng ký với</div>
+      <div class="social-btns">
+        <button class="btn-social google" onclick="socialLogin('google')" type="button">
+          <span class="s-icon">🔍</span> Google
+        </button>
+        <button class="btn-social facebook" onclick="socialLogin('facebook')" type="button">
+          <span class="s-icon">📘</span> Facebook
+        </button>
+      </div>
+
+      <div class="auth-footer">
+        Đã có tài khoản? <a href="login.html">Đăng nhập</a>
+      </div>
+      <div class="auth-footer" style="margin-top:10px;">
+        <a href="index.html" style="display:inline-flex;align-items:center;gap:5px;color:var(--text-faint);text-decoration:none;font-size:12.5px;font-weight:500;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-faint)'">← Quay lại trang chủ</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+  <script src="/html/theme.js" defer></script>
+  <script src="/html/auth.js"></script>
+  <script src="/html/script.js" defer></script>
+  <script>
+    // ── Check ALLOW_REGISTER ────────────────────────────────
+    Auth._findApiBase().then(base =>
+      fetch(`${base}/auth/config`).then(r => r.json()).then(cfg => {
+        if (!cfg.allow_register) {
+          document.getElementById('registerForm').style.display = 'none';
+          document.getElementById('disabledNotice').style.display = 'block';
+          document.querySelector('.or-divider')?.remove();
+          document.querySelector('.social-btns')?.remove();
+        }
+      }).catch(() => {})
+    );
+
+    // ── Password strength ───────────────────────────────────
+    const rules = {
+      'rule-len':   v => v.length >= 8,
+      'rule-upper': v => /[A-Z]/.test(v),
+      'rule-lower': v => /[a-z]/.test(v),
+      'rule-digit': v => /\d/.test(v),
+    };
+    const strengthColors = ['#ef4444','#f97316','#eab308','#34d399'];
+    const strengthLabels = ['Rất yếu','Yếu','Trung bình','Mạnh'];
+
+    document.getElementById('regPassword').addEventListener('input', function() {
+      const v = this.value;
+      const strBox = document.getElementById('pwStrength');
+      if (v.length === 0) { strBox.style.display = 'none'; return; }
+      strBox.style.display = 'block';
+
+      let score = 0;
+      for (const [id, fn] of Object.entries(rules)) {
+        const li = document.getElementById(id);
+        if (fn(v)) { li.classList.add('pass'); score++; }
+        else { li.classList.remove('pass'); }
+      }
+
+      const fill = document.getElementById('pwBarFill');
+      fill.style.width = (score * 25) + '%';
+      fill.style.background = strengthColors[score - 1] || '#ef4444';
+
+      checkConfirm();
+    });
+
+    // ── Confirm match ───────────────────────────────────────
+    function checkConfirm() {
+      const pw = document.getElementById('regPassword').value;
+      const cf = document.getElementById('regConfirm').value;
+      const hint = document.getElementById('confirmHint');
+      if (!cf) { hint.style.display = 'none'; return; }
+      hint.style.display = 'block';
+      if (pw === cf) {
+        hint.style.color = 'var(--success,#34d399)';
+        hint.textContent = '✓ Mật khẩu khớp';
+      } else {
+        hint.style.color = 'var(--danger,#ef4444)';
+        hint.textContent = '✗ Mật khẩu không khớp';
+      }
+    }
+    document.getElementById('regConfirm').addEventListener('input', checkConfirm);
+
+    // ── Toggle password visibility ──────────────────────────
+    function togglePw(id, btn) {
+      const inp = document.getElementById(id);
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+    }
+
+    // ── Form submit ─────────────────────────────────────────
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('regUsername').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const confirm  = document.getElementById('regConfirm').value;
+      const email    = document.getElementById('regEmail').value.trim();
+      const fullName = document.getElementById('regFullName').value.trim();
+      const btn = document.getElementById('registerBtn');
+      const errEl = document.getElementById('authError');
+      errEl.classList.remove('show');
+
+      // Client-side validation
+      if (!username || username.length < 3) {
+        showErr('Tên đăng nhập phải có ít nhất 3 ký tự.'); return;
+      }
+      if (password.length < 8) {
+        showErr('Mật khẩu phải có ít nhất 8 ký tự.'); return;
+      }
+      if (!/[A-Z]/.test(password)) {
+        showErr('Mật khẩu phải có ít nhất 1 chữ hoa.'); return;
+      }
+      if (!/[a-z]/.test(password)) {
+        showErr('Mật khẩu phải có ít nhất 1 chữ thường.'); return;
+      }
+      if (!/\d/.test(password)) {
+        showErr('Mật khẩu phải có ít nhất 1 chữ số.'); return;
+      }
+      if (password !== confirm) {
+        showErr('Mật khẩu xác nhận không khớp.'); return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Đang tạo tài khoản...';
+
+      try {
+        await Auth.register(username, password, confirm, email, fullName);
+        if (typeof showToast === 'function') {
+          showToast('success', 'Tạo tài khoản thành công! 🎉', 'Đang chuyển về trang đăng nhập...');
+        }
+        setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+      } catch (err) {
+        const msg = err.message || 'Đăng ký thất bại.';
+        showErr(msg.includes('403') || msg.toLowerCase().includes('tắt')
+          ? 'Đăng ký đã bị tắt. Liên hệ quản trị viên.'
+          : msg);
+        btn.disabled = false;
+        btn.textContent = 'Tạo tài khoản →';
+      }
+    });
+
+    function showErr(msg) {
+      const el = document.getElementById('authError');
+      el.textContent = msg;
+      el.classList.add('show');
+    }
+
+    // ── Social login ────────────────────────────────────────
+    function socialLogin(provider) {
+      // Yêu cầu cấu hình Google/Facebook App ID
+      alert(`Đăng ${provider === 'google' ? 'nhập với Google' : 'nhập với Facebook'}:\n\nTính năng này cần cấu hình App ID trong .env:\n- GOOGLE_CLIENT_ID (cho Google)\n- FACEBOOK_APP_ID (cho Facebook)\n\nSau khi cấu hình, nút này sẽ mở OAuth popup.`);
+    }
+
+    // ── Theme ───────────────────────────────────────────────
+    document.getElementById('themeBtn')?.addEventListener('click', () => {
+      window.toggleTheme?.();
+      const light = document.documentElement.getAttribute('data-theme') === 'light';
+      document.getElementById('themeBtn').textContent = light ? '☀️' : '🌙';
+    });
+  </script>
+</body>
+</html>

@@ -13,6 +13,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from app.bot.gemini import goi_gemini_viet_lai_bai
 from app.bot.browser import dong_chrome, tao_driver
 from app.bot.dang_bai import dang_mot_nhom
+from app.config import settings as app_config
 
 
 def lay_bai_tu_nhom_nguon(driver, wait, url_nhom, so_bai):
@@ -105,7 +106,7 @@ def thuc_thi_tien_trinh_repost(nhom_nguon_urls, nhom_dich_urls, so_bai, thu_muc_
     driver = None
     try:
         dong_chrome()
-        driver = tao_driver()
+        driver = tao_driver(headless=app_config.HEADLESS_MODE)
         wait = WebDriverWait(driver, 30)
         driver.get("https://www.facebook.com")
         time.sleep(5)

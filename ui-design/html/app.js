@@ -406,10 +406,13 @@ async function handleScheduleFormSubmit(event) {
     document.querySelector('#scheduleForm')?.reset();
     updateScheduleFormFields();
     await loadData();
-    if (typeof showToast === 'function') showToast('success', 'Tạo lịch thành công! 📅', `Lịch ${type === 'dang-bai' ? 'đăng bài' : type === 'repost' ? 'repost' : 'tương tác'} đã được lưu.`);
+    const loaiLabel = type === 'dang-bai' ? 'Đăng bài' : type === 'repost' ? 'Repost' : 'Tương tác';
+    if (typeof showToast === 'function') showToast('success', `Tạo lịch thành công! 📅`, `Lịch ${loaiLabel} đã được lưu và kích hoạt.`);
+    if (typeof addNotification === 'function') addNotification('📅', `Đã lên lịch ${loaiLabel}`, `Lịch chạy vào ${thu} lúc ${gio} đã được kích hoạt.`);
   } catch (error) {
     console.error('Failed to create schedule', error);
     if (typeof showToast === 'function') showToast('error', 'Không thể tạo lịch', error.message || '');
+    if (typeof addNotification === 'function') addNotification('❌', 'Tạo lịch thất bại', error.message || '');
     setStatus(error.message || 'Không thể tạo lịch', true);
   }
 }
@@ -760,16 +763,24 @@ async function loadSettingsPage() {
   try {
     const cfg = await loadSettings();
     if (!cfg) return;
-    const wtEl = document.querySelector('#settingWaitTime');
-    const llEl = document.querySelector('#settingLikeLimit');
-    const clEl = document.querySelector('#settingCommentLimit');
+    const wtEl  = document.querySelector('#settingWaitTime');
+    const llEl  = document.querySelector('#settingLikeLimit');
+    const clEl  = document.querySelector('#settingCommentLimit');
     const imgEl = document.querySelector('#settingImageDir');
-    if (wtEl) wtEl.value = cfg.thoi_gian_cho_giua_cac_nhom || '';
-    if (llEl) llEl.value = cfg.gioi_han_like || '';
-    if (clEl) clEl.value = cfg.gioi_han_comment || '';
-    if (imgEl) imgEl.value = cfg.thu_muc_anh || '';
+    const hlEl  = document.querySelector('#settingHeadless');
+    const hlLbl = document.querySelector('#headlessLabel');
+    if (wtEl)  wtEl.value   = cfg.thoi_gian_cho_giua_cac_nhom || '';
+    if (llEl)  llEl.value   = cfg.gioi_han_like || '';
+    if (clEl)  clEl.value   = cfg.gioi_han_comment || '';
+    if (imgEl) imgEl.value  = cfg.thu_muc_anh || '';
+    if (hlEl)  hlEl.checked = !!cfg.headless_mode;
+    if (hlLbl) {
+      const lang = localStorage.getItem('fbbot-lang') || 'vi';
+      hlLbl.textContent = cfg.headless_mode
+        ? (lang === 'en' ? 'Enabled' : 'Đang bật')
+        : (lang === 'en' ? 'Disabled' : 'Đang tắt');
+    }
 
-    // Check backend status
     const backendEl = document.querySelector('#backendStatus');
     if (backendEl) {
       backendEl.className = 'badge badge-success';
@@ -787,15 +798,17 @@ async function loadSettingsPage() {
 
 async function saveSettings() {
   const payload = {};
-  const wtEl = document.querySelector('#settingWaitTime');
-  const llEl = document.querySelector('#settingLikeLimit');
-  const clEl = document.querySelector('#settingCommentLimit');
+  const wtEl  = document.querySelector('#settingWaitTime');
+  const llEl  = document.querySelector('#settingLikeLimit');
+  const clEl  = document.querySelector('#settingCommentLimit');
   const imgEl = document.querySelector('#settingImageDir');
+  const hlEl  = document.querySelector('#settingHeadless');
 
-  if (wtEl?.value) payload.thoi_gian_cho_giua_cac_nhom = Number(wtEl.value);
-  if (llEl?.value) payload.gioi_han_like = Number(llEl.value);
-  if (clEl?.value) payload.gioi_han_comment = Number(clEl.value);
-  if (imgEl?.value) payload.thu_muc_anh = imgEl.value.trim();
+  if (wtEl?.value)  payload.thoi_gian_cho_giua_cac_nhom = Number(wtEl.value);
+  if (llEl?.value)  payload.gioi_han_like    = Number(llEl.value);
+  if (clEl?.value)  payload.gioi_han_comment = Number(clEl.value);
+  if (imgEl?.value) payload.thu_muc_anh      = imgEl.value.trim();
+  if (hlEl)         payload.headless_mode    = hlEl.checked;
 
   const saveBtn = document.querySelector('#saveSettingsBtn');
   try {
@@ -806,6 +819,7 @@ async function saveSettings() {
       saveBtn.disabled = true;
       setTimeout(() => { saveBtn.innerHTML = orig; saveBtn.disabled = false; }, 2000);
     }
+    if (typeof showToast === 'function') showToast('success', 'Đã lưu cài đặt');
   } catch (err) {
     setStatus('❌ Lỗi: ' + (err.message || 'Không thể lưu cài đặt'), true);
   }

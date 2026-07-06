@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tài khoản · FB Bot Console</title>
+  <script>
+    (function(){try{var t=localStorage.getItem('fbbot-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})()</script>
+  <link rel="stylesheet" href="../html/css/tokens.css?v=202607" />
+  <link rel="stylesheet" href="../html/css/base.css?v=202607" />
+  <link rel="stylesheet" href="../html/css/components.css?v=202607" />
+  <link rel="stylesheet" href="../html/css/responsive.css?v=202607" />
+  <style>
+    .profile-grid { display:grid; grid-template-columns:300px 1fr; gap:20px; align-items:start; }
+    .profile-card {
+      background:var(--glass); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+      border:1px solid var(--glass-border); border-radius:var(--radius);
+      box-shadow:var(--shadow); overflow:hidden; animation:surfaceIn .4s var(--ease) backwards;
+    }
+    /* Avatar area */
+    .avatar-area { padding:28px 24px 20px; text-align:center; border-bottom:1px solid var(--border-soft); background:linear-gradient(160deg,var(--bg-soft),transparent); }
+    .avatar-wrap { position:relative; display:inline-block; margin-bottom:14px; }
+    .avatar-circle {
+      width:96px; height:96px; border-radius:50%;
+      background:linear-gradient(135deg,#38bdf8,#a78bfa);
+      display:flex; align-items:center; justify-content:center;
+      font-size:38px; font-weight:700; color:#fff;
+      border:3px solid var(--glass-border); box-shadow:0 8px 24px -8px rgba(99,102,241,.4);
+      margin:0 auto; user-select:none;
+    }
+    .avatar-edit-btn {
+      position:absolute; bottom:2px; right:2px;
+      width:28px; height:28px; border-radius:50%;
+      background:var(--accent); border:2px solid var(--bg);
+      display:flex; align-items:center; justify-content:center;
+      font-size:13px; cursor:pointer; transition:transform .2s;
+    }
+    .avatar-edit-btn:hover { transform:scale(1.15); }
+    .profile-name { font-size:17px; font-weight:700; color:var(--text); margin-bottom:2px; }
+    .profile-username { font-size:13px; color:var(--text-muted); margin-bottom:8px; }
+    .profile-role-badge { display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:var(--radius-pill); background:var(--accent-soft); color:var(--accent); }
+    /* Sidebar info */
+    .profile-meta { padding:16px 20px; }
+    .meta-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-soft); font-size:13px; }
+    .meta-item:last-child { border-bottom:none; }
+    .meta-icon { font-size:16px; width:22px; text-align:center; flex-shrink:0; }
+    .meta-label { font-size:11px; color:var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+    .meta-value { color:var(--text); font-weight:500; }
+    /* Section cards */
+    .section-card {
+      background:var(--glass); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+      border:1px solid var(--glass-border); border-radius:var(--radius);
+      box-shadow:var(--shadow); overflow:hidden; animation:surfaceIn .4s var(--ease) backwards;
+    }
+    .section-card:nth-child(1){animation-delay:.05s} .section-card:nth-child(2){animation-delay:.1s} .section-card:nth-child(3){animation-delay:.15s}
+    .section-head {
+      display:flex; align-items:center; gap:10px; padding:16px 20px 14px;
+      border-bottom:1px solid var(--border-soft); background:linear-gradient(90deg,var(--bg-soft),transparent);
+    }
+    .section-head h3 { margin:0; font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+    .section-body { padding:20px; display:flex; flex-direction:column; gap:14px; }
+    .field label { display:block; font-size:13px; font-weight:600; color:var(--text-muted); margin-bottom:5px; }
+    .field input, .field textarea { width:100%; box-sizing:border-box; }
+    .field textarea { resize:vertical; min-height:80px; font-family:var(--font-body); }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    /* Password rules */
+    .pw-toggle-wrap { position:relative; }
+    .pw-toggle-wrap input { padding-right:40px; }
+    .pw-toggle { position:absolute;right:12px;top:50%;transform:translateY(-50%); background:none;border:none;cursor:pointer;font-size:15px;color:var(--text-faint);padding:2px; }
+    .pw-toggle:hover { color:var(--text); }
+    .pw-rules { list-style:none;padding:0;margin:6px 0 0;font-size:12px;color:var(--text-faint); display:grid; grid-template-columns:1fr 1fr; gap:2px 12px; }
+    .pw-rules li { display:flex;align-items:center;gap:5px; }
+    .pw-rules li .chk::before { content:'○'; }
+    .pw-rules li.pass { color:var(--success,#34d399); }
+    .pw-rules li.pass .chk::before { content:'✓'; }
+    /* Success/error inline */
+    .form-msg { font-size:13px; padding:9px 13px; border-radius:var(--radius-sm); display:none; margin-top:4px; }
+    .form-msg.show { display:block; }
+    .form-msg.success { background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.3); color:var(--success,#34d399); }
+    .form-msg.error   { background:rgba(239,68,68,.1);  border:1px solid rgba(239,68,68,.3);  color:var(--danger,#ef4444); }
+    /* Danger zone */
+    .danger-zone { border-color:rgba(239,68,68,.35); }
+    .danger-zone .section-head { background:rgba(239,68,68,.06); }
+    .danger-zone .section-head h3 { color:var(--danger,#ef4444); }
+    .btn-danger-outline { background:transparent; border:1px solid var(--danger,#ef4444); color:var(--danger,#ef4444); }
+    .btn-danger-outline:hover { background:rgba(239,68,68,.1); }
+    @media(max-width:900px){ .profile-grid{grid-template-columns:1fr} .field-row{grid-template-columns:1fr} }
+  </style>
+</head>
+<body class="page-profile">
+  <header class="global-bar">
+    <div class="global-bar-left">
+      <a href="../html/dashboard.html" class="global-bar-logo">
+        <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
+        <span class="global-bar-logo-text">FB Bot Console</span>
+      </a>
+      <div class="global-bar-sep"></div>
+      <div class="global-status-dot"><span class="dot dot-success"></span><span class="global-status-label">Online</span></div>
+    </div>
+    <div class="global-bar-right">
+      <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
+      <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
+    </div>
+  </header>
+
+  <div class="app">
+    <div class="sidebar-wrapper" id="sidebarWrapper">
+      <aside class="sidebar" id="sidebar">
+        <nav>
+          <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span></a>
+          <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label">Nhóm</span></a>
+          <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label">Chủ đề</span></a>
+          <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label">Lịch đăng</span></a>
+          <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label">Logs</span></a>
+          <a href="profile.html" class="nav-profile active"><span class="nav-icon">👤</span><span class="nav-label">Tài khoản</span></a>
+        </nav>
+        <div class="sidebar-status"><span class="dot dot-success"></span>
+          <div class="sidebar-status-text"><span class="label">Bot đang chạy</span><span class="sub">v1.0.0</span></div>
+        </div>
+      </aside>
+      <button class="sidebar-toggle" id="sidebarToggle" title="Thu gọn"><svg viewBox="0 0 7 12"><polyline points="5,1 1,6 5,11"/></svg></button>
+    </div>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow"><span class="dot"></span> Tài khoản</span>
+          <h2>Quản lý tài khoản</h2>
+          <p class="sub">Chỉnh sửa thông tin cá nhân, email và mật khẩu.</p>
+        </div>
+        <div class="topbar-hero-shapes" aria-hidden="true">
+          <div class="hero-shape">👤</div><div class="hero-shape">🔐</div><div class="hero-shape">✏️</div>
+        </div>
+      </header>
+
+      <div class="profile-grid">
+        <!-- ── Sidebar profile card ── -->
+        <div>
+          <div class="profile-card">
+            <div class="avatar-area">
+              <div class="avatar-wrap">
+                <div class="avatar-circle" id="avatarCircle">?</div>
+                <div class="avatar-edit-btn" title="Đổi avatar" onclick="document.getElementById('avatarUrlInput').focus(); document.getElementById('avatarUrlInput').scrollIntoView({behavior:'smooth'})">✏️</div>
+              </div>
+              <div class="profile-name" id="profileDisplayName">—</div>
+              <div class="profile-username" id="profileDisplayUsername">@—</div>
+              <span class="profile-role-badge">🛡️ <span id="profileDisplayRole">admin</span></span>
+            </div>
+            <div class="profile-meta">
+              <div class="meta-item">
+                <span class="meta-icon">📧</span>
+                <div><div class="meta-label">Email</div><div class="meta-value" id="metaEmail">—</div></div>
+              </div>
+              <div class="meta-item">
+                <span class="meta-icon">📅</span>
+                <div><div class="meta-label">Ngày tạo</div><div class="meta-value" id="metaCreated">—</div></div>
+              </div>
+              <div class="meta-item">
+                <span class="meta-icon">✅</span>
+                <div><div class="meta-label">Trạng thái</div><div class="meta-value" id="metaStatus">Đang hoạt động</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Right forms ── -->
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <!-- ── Thông tin cá nhân ── -->
+          <div class="section-card">
+            <div class="section-head"><h3>👤 Thông tin cá nhân</h3></div>
+            <div class="section-body">
+              <div class="form-msg" id="profileMsg"></div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="profileFullName">Họ và tên</label>
+                  <input id="profileFullName" type="text" placeholder="Nguyễn Văn A" autocomplete="name" />
+                </div>
+                <div class="field">
+                  <label for="profileUsername">Tên đăng nhập <span style="color:var(--text-faint);font-weight:400;font-size:11px;">(không thể đổi)</span></label>
+                  <input id="profileUsername" type="text" readonly disabled style="opacity:.6;cursor:not-allowed;" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="profileEmail">Email</label>
+                <input id="profileEmail" type="email" placeholder="you@example.com" autocomplete="email" />
+              </div>
+              <div class="field">
+                <label for="profileBio">Giới thiệu bản thân <span style="color:var(--text-faint);font-weight:400;font-size:11px;">(tuỳ chọn)</span></label>
+                <textarea id="profileBio" placeholder="Ví dụ: Quản trị viên hệ thống tự động hóa Facebook..."></textarea>
+              </div>
+              <div class="field">
+                <label for="avatarUrlInput">URL ảnh đại diện <span style="color:var(--text-faint);font-weight:400;font-size:11px;">(tuỳ chọn)</span></label>
+                <input id="avatarUrlInput" type="url" placeholder="https://example.com/avatar.jpg" oninput="previewAvatar(this.value)" />
+              </div>
+              <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
+                <button class="btn" type="button" onclick="loadProfileData()">↺ Đặt lại</button>
+                <button class="btn btn-primary" type="button" id="saveProfileBtn" onclick="saveProfile()">💾 Lưu thông tin</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Đổi mật khẩu ── -->
+          <div class="section-card">
+            <div class="section-head"><h3>🔐 Đổi mật khẩu</h3></div>
+            <div class="section-body">
+              <div class="form-msg" id="pwMsg"></div>
+              <div class="field">
+                <label for="currentPw">Mật khẩu hiện tại</label>
+                <div class="pw-toggle-wrap">
+                  <input id="currentPw" type="password" placeholder="••••••••" autocomplete="current-password" />
+                  <button type="button" class="pw-toggle" onclick="togglePw('currentPw',this)">👁</button>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="newPw">Mật khẩu mới</label>
+                  <div class="pw-toggle-wrap">
+                    <input id="newPw" type="password" placeholder="Tối thiểu 8 ký tự" autocomplete="new-password" oninput="checkPwStrength(this.value);checkPwMatch()" />
+                    <button type="button" class="pw-toggle" onclick="togglePw('newPw',this)">👁</button>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="confirmPw">Xác nhận mật khẩu mới</label>
+                  <div class="pw-toggle-wrap">
+                    <input id="confirmPw" type="password" placeholder="Nhập lại mật khẩu" autocomplete="new-password" oninput="checkPwMatch()" />
+                    <button type="button" class="pw-toggle" onclick="togglePw('confirmPw',this)">👁</button>
+                  </div>
+                </div>
+              </div>
+              <!-- Strength indicator -->
+              <div id="pwStrengthArea" style="display:none;">
+                <div style="height:4px;border-radius:2px;background:var(--border-soft);overflow:hidden;margin-bottom:6px;">
+                  <div id="pwStrBar" style="height:100%;border-radius:2px;transition:width .3s,background .3s;width:0%;"></div>
+                </div>
+                <ul class="pw-rules" id="pwRulesList">
+                  <li id="r-len"><span class="chk"></span>≥ 8 ký tự</li>
+                  <li id="r-upper"><span class="chk"></span>Chữ hoa A-Z</li>
+                  <li id="r-lower"><span class="chk"></span>Chữ thường a-z</li>
+                  <li id="r-digit"><span class="chk"></span>Số 0-9</li>
+                </ul>
+                <div id="pwMatchHint" style="font-size:12px;margin-top:4px;"></div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:4px;">
+                <button class="btn btn-primary" type="button" id="savePwBtn" onclick="changePassword()">🔑 Cập nhật mật khẩu</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Vùng nguy hiểm ── -->
+          <div class="section-card danger-zone">
+            <div class="section-head"><h3>⚠️ Vùng nguy hiểm</h3></div>
+            <div class="section-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                <div>
+                  <div style="font-size:14px;font-weight:600;color:var(--text);">Đăng xuất khỏi tất cả thiết bị</div>
+                  <div style="font-size:12.5px;color:var(--text-muted);margin-top:3px;">Thu hồi tất cả token hiện tại. Bạn sẽ cần đăng nhập lại.</div>
+                </div>
+                <button class="btn btn-danger-outline" type="button" onclick="logoutAll()">🚪 Đăng xuất tất cả</button>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /.right forms -->
+      </div><!-- /.profile-grid -->
+    </main>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="../html/theme.js" defer></script>
+  <script src="../html/i18n.js" defer></script>
+  <script src="../html/auth.js"></script>
+  <script src="../html/script.js" defer></script>
+  <script>
+    // ── Sidebar ─────────────────────────────────────────────
+    const sw=document.getElementById('sidebarWrapper'),sb=document.getElementById('sidebar'),st=document.getElementById('sidebarToggle');
+    function applyC(c){sw?.classList.toggle('collapsed',c);sb?.classList.toggle('collapsed',c);const p=st?.querySelector('polyline');if(p)p.setAttribute('points',c?'1,1 5,6 1,11':'5,1 1,6 5,11');localStorage.setItem('fbbot-sidebar',c?'1':'0');}
+    applyC(localStorage.getItem('fbbot-sidebar')==='1');
+    st?.addEventListener('click',()=>applyC(!sw?.classList.contains('collapsed')));
+
+    // ── API base ─────────────────────────────────────────────
+    let _apiBase = null;
+    async function getBase() {
+      if (_apiBase) return _apiBase;
+      const cands = [`http://${location.hostname}:8000`,`http://${location.hostname}:8005`];
+      for (const b of cands) {
+        try { const r=await fetch(`${b}/`,{signal:AbortSignal.timeout(2000)}); if(r.ok){_apiBase=b;return b;} } catch(_){}
+      }
+      _apiBase=cands[0]; return cands[0];
+    }
+    async function apiCall(path, method='GET', body=null) {
+      const base = await getBase();
+      const token = Auth.getAccessToken();
+      const opts = { method, headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})} };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(`${base}${path}`, opts);
+      if (res.status === 204) return null;
+      const data = await res.json().catch(()=>({}));
+      if (!res.ok) throw new Error(data.detail || `Lỗi ${res.status}`);
+      return data;
+    }
+
+    // ── Load profile ─────────────────────────────────────────
+    async function loadProfileData() {
+      try {
+        const user = await apiCall('/auth/me');
+        document.getElementById('profileFullName').value = user.full_name || '';
+        document.getElementById('profileUsername').value = user.username || '';
+        document.getElementById('profileEmail').value = user.email || '';
+        document.getElementById('profileBio').value = user.bio || '';
+        document.getElementById('avatarUrlInput').value = user.avatar_url || '';
+
+        // Sidebar card
+        document.getElementById('profileDisplayName').textContent = user.full_name || user.username;
+        document.getElementById('profileDisplayUsername').textContent = '@' + user.username;
+        document.getElementById('profileDisplayRole').textContent = user.role;
+        document.getElementById('metaEmail').textContent = user.email || 'Chưa cập nhật';
+        document.getElementById('metaCreated').textContent = user.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : '—';
+        document.getElementById('metaStatus').textContent = user.is_active ? 'Đang hoạt động' : 'Bị vô hiệu hoá';
+
+        // Avatar
+        updateAvatar(user.avatar_url, user.full_name || user.username);
+      } catch(err) {
+        if (err.message.includes('401')) { Auth.clearTokens(); Auth._redirectToLogin(); }
+      }
+    }
+
+    function updateAvatar(url, name) {
+      const el = document.getElementById('avatarCircle');
+      if (url) {
+        el.innerHTML = `<img src="${url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentElement.textContent='${(name||'?')[0].toUpperCase()}'" />`;
+      } else {
+        el.textContent = (name || '?')[0].toUpperCase();
+      }
+    }
+
+    function previewAvatar(url) {
+      const name = document.getElementById('profileFullName').value || document.getElementById('profileUsername').value || '?';
+      updateAvatar(url, name);
+    }
+
+    // ── Save profile ─────────────────────────────────────────
+    async function saveProfile() {
+      const btn = document.getElementById('saveProfileBtn');
+      const msg = document.getElementById('profileMsg');
+      msg.className = 'form-msg';
+      btn.disabled = true; btn.textContent = 'Đang lưu...';
+
+      const payload = {
+        full_name: document.getElementById('profileFullName').value.trim() || null,
+        email: document.getElementById('profileEmail').value.trim() || null,
+        bio: document.getElementById('profileBio').value.trim() || null,
+        avatar_url: document.getElementById('avatarUrlInput').value.trim() || null,
+      };
+
+      try {
+        const updated = await apiCall('/auth/profile', 'PUT', payload);
+        msg.textContent = '✓ Đã lưu thông tin thành công!';
+        msg.className = 'form-msg success show';
+        // Cập nhật sidebar
+        document.getElementById('profileDisplayName').textContent = updated.full_name || updated.username;
+        document.getElementById('metaEmail').textContent = updated.email || 'Chưa cập nhật';
+        if (typeof showToast === 'function') showToast('success','Đã lưu thông tin','Hồ sơ của bạn đã được cập nhật.');
+      } catch(err) {
+        msg.textContent = '✗ ' + (err.message || 'Lỗi khi lưu');
+        msg.className = 'form-msg error show';
+      } finally {
+        btn.disabled = false; btn.textContent = '💾 Lưu thông tin';
+        setTimeout(()=>msg.classList.remove('show'), 4000);
+      }
+    }
+
+    // ── Password strength ─────────────────────────────────────
+    const pwRules = {'r-len':v=>v.length>=8,'r-upper':v=>/[A-Z]/.test(v),'r-lower':v=>/[a-z]/.test(v),'r-digit':v=>/\d/.test(v)};
+    const strengthColors=['#ef4444','#f97316','#eab308','#34d399'];
+
+    function checkPwStrength(v) {
+      const area=document.getElementById('pwStrengthArea');
+      if(!v){area.style.display='none';return;}
+      area.style.display='block';
+      let score=0;
+      for(const[id,fn] of Object.entries(pwRules)){
+        const li=document.getElementById(id);
+        if(fn(v)){li.classList.add('pass');score++;}else{li.classList.remove('pass');}
+      }
+      const bar=document.getElementById('pwStrBar');
+      bar.style.width=(score*25)+'%'; bar.style.background=strengthColors[score-1]||'#ef4444';
+    }
+
+    function checkPwMatch() {
+      const pw=document.getElementById('newPw').value;
+      const cf=document.getElementById('confirmPw').value;
+      const hint=document.getElementById('pwMatchHint');
+      if(!cf){hint.textContent='';return;}
+      if(pw===cf){hint.style.color='var(--success,#34d399)';hint.textContent='✓ Mật khẩu khớp';}
+      else{hint.style.color='var(--danger,#ef4444)';hint.textContent='✗ Mật khẩu không khớp';}
+    }
+
+    function togglePw(id,btn){const i=document.getElementById(id);i.type=i.type==='password'?'text':'password';btn.textContent=i.type==='password'?'👁':'🙈';}
+
+    // ── Change password ───────────────────────────────────────
+    async function changePassword() {
+      const btn=document.getElementById('savePwBtn');
+      const msg=document.getElementById('pwMsg');
+      msg.className='form-msg';
+
+      const cur=document.getElementById('currentPw').value;
+      const nw=document.getElementById('newPw').value;
+      const cf=document.getElementById('confirmPw').value;
+
+      if(!cur){showPwErr('Vui lòng nhập mật khẩu hiện tại.');return;}
+      if(nw.length<8){showPwErr('Mật khẩu mới phải có ít nhất 8 ký tự.');return;}
+      if(nw!==cf){showPwErr('Mật khẩu xác nhận không khớp.');return;}
+
+      btn.disabled=true; btn.textContent='Đang cập nhật...';
+      try {
+        await apiCall('/auth/change-password','PUT',{current_password:cur,new_password:nw,confirm_new_password:cf});
+        msg.textContent='✓ Đổi mật khẩu thành công!';
+        msg.className='form-msg success show';
+        document.getElementById('currentPw').value='';
+        document.getElementById('newPw').value='';
+        document.getElementById('confirmPw').value='';
+        document.getElementById('pwStrengthArea').style.display='none';
+        if(typeof showToast==='function') showToast('success','Đổi mật khẩu thành công 🔐','');
+      } catch(err){
+        showPwErr(err.message||'Lỗi khi đổi mật khẩu');
+      } finally {
+        btn.disabled=false; btn.textContent='🔑 Cập nhật mật khẩu';
+        setTimeout(()=>msg.classList.remove('show'),5000);
+      }
+    }
+
+    function showPwErr(m){const el=document.getElementById('pwMsg');el.textContent='✗ '+m;el.className='form-msg error show';}
+
+    // ── Logout all ────────────────────────────────────────────
+    async function logoutAll() {
+      if(!confirm('Bạn có chắc muốn đăng xuất khỏi tất cả thiết bị?')) return;
+      await Auth.logout();
+    }
+
+    // ── Init ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.guardPage();
+      await loadProfileData();
+    });
+  </script>
+</body>
+</html>

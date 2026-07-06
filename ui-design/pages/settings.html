@@ -1,290 +1,414 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cài đặt · FB Bot</title>
+    <title>Cài đặt · FB Bot Console</title>
     <script>
       (function () {
         try {
-          if (localStorage.getItem('fbbot-theme') === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
-          }
-        } catch (error) {}
+          var t = localStorage.getItem('fbbot-theme');
+          document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+        } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="../html/styles.css?v=5" />
-    <script src="../html/theme.js?v=5" defer></script>
-    <script src="../html/api.js?v=5" defer></script>
-    <script src="../html/app.js?v=5" defer></script>
+    <link rel="stylesheet" href="../html/css/tokens.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/base.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/components.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/responsive.css?v=202607061201" />
+    <style>
+      /* ── Settings layout ── */
+      .settings-two-col {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+
+      /* Left nav */
+      .settings-nav {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        animation: surfaceIn 0.4s var(--ease) backwards;
+        position: sticky;
+        top: 66px;
+      }
+      .settings-nav-head {
+        padding: 14px 16px 10px;
+        border-bottom: 1px solid var(--border-soft);
+        font-size: 11.5px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .06em; color: var(--text-faint);
+      }
+      .settings-nav a {
+        display: flex; align-items: center; gap: 10px;
+        padding: 11px 16px;
+        font-size: 13.5px; font-weight: 500; color: var(--text-muted);
+        text-decoration: none;
+        border-left: 2px solid transparent;
+        transition: all .15s;
+      }
+      .settings-nav a:hover { background: var(--bg-soft); color: var(--text); }
+      .settings-nav a.active { background: var(--accent-soft); color: var(--text); border-left-color: var(--accent); }
+
+      /* Content area */
+      .settings-content { display: flex; flex-direction: column; gap: 16px; }
+
+      /* System status card */
+      .sys-status-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+        padding: 16px;
+      }
+      .sys-status-item {
+        background: var(--bg-soft); border: 1px solid var(--border-soft);
+        border-radius: var(--radius-sm); padding: 12px 14px;
+        display: flex; align-items: center; gap: 10px;
+      }
+      .sys-status-label { font-size: 12.5px; font-weight: 600; color: var(--text); }
+      .sys-status-sub { font-size: 11.5px; color: var(--text-faint); font-family: var(--font-mono); }
+
+      @media (max-width: 900px) {
+        .settings-two-col { grid-template-columns: 1fr; }
+        .settings-nav { position: static; }
+        .sys-status-grid { grid-template-columns: 1fr 1fr; }
+      }
+      @media (max-width: 560px) {
+        .sys-status-grid { grid-template-columns: 1fr; }
+      }
+    </style>
   </head>
   <body class="page-settings">
+
+    <!-- ══ GLOBAL BAR ══ -->
+    <header class="global-bar">
+      <div class="global-bar-left">
+        <a href="../html/dashboard.html" class="global-bar-logo">
+          <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
+          <span class="global-bar-logo-text">FB Bot Console</span>
+        </a>
+        <div class="global-bar-sep"></div>
+        <div class="global-status-dot">
+          <span class="dot dot-success"></span>
+          <span class="global-status-label" data-i18n="bar.online">Online</span>
+        </div>
+      </div>
+      <div class="global-bar-right">
+        <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
+        <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+      </div>
+    </header>
+
     <div class="app">
-      <aside class="sidebar">
-        <nav>
-          <a href="../html/index.html" class="nav-dashboard">
-            <span class="nav-icon">🏠</span><span class="nav-label"> Dashboard</span>
-          </a>
-          <a href="groups.html" class="nav-groups">
-            <span class="nav-icon">👥</span><span class="nav-label"> Nhóm</span>
-          </a>
-          <a href="topics.html" class="nav-topics">
-            <span class="nav-icon">🏷️</span><span class="nav-label"> Chủ đề</span>
-          </a>
-          <a href="schedules.html" class="nav-schedules">
-            <span class="nav-icon">📅</span><span class="nav-label"> Lịch đăng</span>
-          </a>
-          <a href="logs.html" class="nav-logs">
-            <span class="nav-icon">📋</span><span class="nav-label"> Logs</span>
-          </a>
-        </nav>
-      </aside>
+      <div class="sidebar-wrapper" id="sidebarWrapper">
+        <aside class="sidebar" id="sidebar">
+          <nav>
+            <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></a>
+            <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+            <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ đề</span></a>
+            <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch đăng</span></a>
+            <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+          </nav>
+          <div class="sidebar-status">
+            <span class="dot dot-success"></span>
+            <div class="sidebar-status-text">
+              <span class="label">Bot đang chạy</span>
+              <span class="sub">v1.0.0 · API online</span>
+            </div>
+          </div>
+        </aside>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Thu gọn">
+          <svg viewBox="0 0 7 12"><polyline points="5,1 1,6 5,11"/></svg>
+        </button>
+      </div>
 
       <main class="main">
         <header class="topbar">
           <div>
+            <span class="eyebrow"><span class="dot"></span> Cấu hình</span>
             <h2>Cài đặt hệ thống</h2>
             <p class="sub">Cấu hình hoạt động của bot và các thông số mặc định.</p>
+          </div>
+          <div class="topbar-hero-shapes" aria-hidden="true">
+            <div class="hero-shape">⚙️</div>
+            <div class="hero-shape">🎨</div>
+            <div class="hero-shape">🔒</div>
           </div>
         </header>
 
         <div id="status" style="margin-bottom:16px;"></div>
 
-        <div class="settings-layout">
+        <div class="settings-two-col">
 
-          <!-- Giao diện -->
-          <section class="settings-section">
-            <div class="settings-section-header">
-              <span class="settings-section-icon">🎨</span>
-              <div>
-                <h3>Giao diện</h3>
-                <p>Tuỳ chỉnh giao diện hiển thị của ứng dụng.</p>
-              </div>
-            </div>
-            <div class="settings-body">
-              <div class="settings-row">
-                <div class="settings-row-label">
-                  <label>Chủ đề màu sắc</label>
-                  <span>Chọn giữa giao diện tối hoặc sáng.</span>
-                </div>
-                <div class="settings-row-control">
-                  <button type="button" id="themeToggleSwitch" class="theme-toggle-settings" aria-pressed="false">
-                    <span class="tts-track">
-                      <span class="tts-thumb"></span>
-                    </span>
-                    <span class="tts-icon">🌙</span>
-                    <span class="tts-label">Chế độ tối</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Bot behavior -->
-          <section class="settings-section">
-            <div class="settings-section-header">
-              <span class="settings-section-icon">🤖</span>
-              <div>
-                <h3>Hành vi Bot</h3>
-                <p>Thời gian chờ và giới hạn tương tác giữa các nhóm.</p>
-              </div>
-            </div>
-            <div class="settings-body">
-              <div class="settings-row">
-                <div class="settings-row-label">
-                  <label for="settingWaitTime">Thời gian chờ giữa các nhóm</label>
-                  <span>Giây bot chờ sau khi đăng vào một nhóm trước khi chuyển sang nhóm tiếp theo.</span>
-                </div>
-                <div class="settings-row-control">
-                  <input type="number" id="settingWaitTime" min="1" max="300" placeholder="60" />
-                  <span class="unit">giây</span>
-                </div>
-              </div>
-              <div class="settings-row">
-                <div class="settings-row-label">
-                  <label for="settingLikeLimit">Giới hạn like / phiên</label>
-                  <span>Số lượt like tối đa bot thực hiện trong mỗi lần tương tác.</span>
-                </div>
-                <div class="settings-row-control">
-                  <input type="number" id="settingLikeLimit" min="0" max="500" placeholder="50" />
-                  <span class="unit">lượt</span>
-                </div>
-              </div>
-              <div class="settings-row">
-                <div class="settings-row-label">
-                  <label for="settingCommentLimit">Giới hạn comment / phiên</label>
-                  <span>Số comment tối đa bot thực hiện trong mỗi lần tương tác.</span>
-                </div>
-                <div class="settings-row-control">
-                  <input type="number" id="settingCommentLimit" min="0" max="200" placeholder="10" />
-                  <span class="unit">comment</span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Media -->
-          <section class="settings-section">
-            <div class="settings-section-header">
-              <span class="settings-section-icon">🖼️</span>
-              <div>
-                <h3>Thư mục ảnh</h3>
-                <p>Đường dẫn thư mục chứa ảnh bot sẽ đính kèm khi đăng bài.</p>
-              </div>
-            </div>
-            <div class="settings-body">
-              <div class="settings-row">
-                <div class="settings-row-label">
-                  <label for="settingImageDir">Đường dẫn thư mục ảnh</label>
-                  <span>Ví dụ: C:/fb_images hoặc ./images</span>
-                </div>
-                <div class="settings-row-control" style="flex:1;">
-                  <input type="text" id="settingImageDir" placeholder="C:/fb_images" style="width:100%;max-width:320px;" />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Save button -->
-          <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:4px;">
-            <button class="btn" type="button" onclick="loadSettingsPage()">↺ Đặt lại</button>
-            <button class="btn btn-primary" id="saveSettingsBtn" type="button" onclick="saveSettings()">💾 Lưu cài đặt</button>
+          <!-- ── Left nav ── -->
+          <div class="settings-nav">
+            <div class="settings-nav-head">Mục cài đặt</div>
+            <a href="#sec-ui" class="active" onclick="scrollTo('sec-ui', this)">🎨 Giao diện</a>
+            <a href="#sec-bot" onclick="scrollTo('sec-bot', this)">🤖 Hành vi Bot</a>
+            <a href="#sec-media" onclick="scrollTo('sec-media', this)">🖼️ Media</a>
+            <a href="#sec-system" onclick="scrollTo('sec-system', this)">ℹ️ Thông tin hệ thống</a>
           </div>
 
-          <!-- About -->
-          <section class="settings-section">
-            <div class="settings-section-header">
-              <span class="settings-section-icon">ℹ️</span>
-              <div>
-                <h3>Thông tin hệ thống</h3>
-                <p>Phiên bản và trạng thái kết nối.</p>
-              </div>
-            </div>
-            <div class="settings-body">
-              <div class="settings-row">
-                <div class="settings-row-label"><label>Phiên bản</label></div>
-                <div class="settings-row-control"><span class="badge badge-idle">v1.0.0</span></div>
-              </div>
-              <div class="settings-row">
-                <div class="settings-row-label"><label>Backend API</label></div>
-                <div class="settings-row-control">
-                  <span id="backendStatus" class="badge badge-idle"><span class="dot dot-idle"></span> Đang kiểm tra...</span>
-                </div>
-              </div>
-              <div class="settings-row">
-                <div class="settings-row-label"><label>Database</label></div>
-                <div class="settings-row-control">
-                  <span class="badge badge-success"><span class="dot dot-success"></span> MongoDB</span>
-                </div>
-              </div>
-            </div>
-          </section>
+          <!-- ── Right content ── -->
+          <div class="settings-content">
 
-        </div>
+            <!-- Giao diện -->
+            <section class="settings-section" id="sec-ui">
+              <div class="settings-section-header">
+                <span class="settings-section-icon">🎨</span>
+                <div>
+                  <h3 data-i18n="settings.ui">Giao diện</h3>
+                  <p data-i18n="settings.ui_desc">Tuỳ chỉnh giao diện hiển thị của ứng dụng.</p>
+                </div>
+              </div>
+              <div class="settings-body">
+                <div class="settings-row">
+                  <div class="settings-row-label">
+                    <label data-i18n="settings.lang">Ngôn ngữ giao diện</label>
+                    <span data-i18n="settings.lang_desc">Chọn ngôn ngữ hiển thị cho toàn bộ ứng dụng.</span>
+                  </div>
+                  <div class="settings-row-control">
+                    <select id="langSelect" onchange="changeLang(this.value)" style="padding:8px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:var(--text);font-family:var(--font-body);font-size:13.5px;cursor:pointer;transition:border-color .15s,box-shadow .15s;">
+                      <option value="vi">🇻🇳 Tiếng Việt</option>
+                      <option value="en">🇺🇸 English</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-label">
+                    <label data-i18n="settings.theme">Chủ đề màu sắc</label>
+                    <span data-i18n="settings.theme_desc">Chuyển giữa giao diện tối (mặc định) và sáng.</span>
+                  </div>
+                  <div class="settings-row-control">
+                    <button type="button" id="themeToggleSwitch" class="theme-toggle-settings" onclick="window.toggleTheme()">
+                      <span class="tts-track"><span class="tts-thumb"></span></span>
+                      <span class="tts-icon">🌙</span>
+                      <span class="tts-label" id="themeLabel" data-i18n="settings.dark">Chế độ tối</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-label">
+                    <label data-i18n="settings.sidebar">Sidebar thu gọn</label>
+                    <span data-i18n="settings.sidebar_desc">Thu gọn thanh điều hướng để có thêm không gian làm việc.</span>
+                  </div>
+                  <div class="settings-row-control">
+                    <button type="button" class="btn" data-i18n="settings.toggle_sidebar" onclick="toggleSidebarFromSettings()">⇔ Chuyển đổi</button>
+                  </div>
+                </div>
+              </div>
+            </section>
 
-          <!-- Bot behavior -->
-          <section class="settings-section">
-            <div class="settings-section-header">
-              <span class="settings-section-icon">🤖</span>
-              <div>
-                <h3>Hành vi Bot</h3>
-                <p>Thời gian chờ và giới hạn tương tác giữa các nhóm.</p>
-              </div>
-            </div>
-            <div class="settings-body">
-              <div class="settings-row">
-                <div class="settings-row-label">
-                  <label for="settingWaitTime">Thời gian chờ giữa các nhóm</label>
-                  <span>Giây bot chờ sau khi đăng vào một nhóm trước khi chuyển sang nhóm tiếp theo.</span>
-                </div>
-                <div class="settings-row-control">
-                  <input type="number" id="settingWaitTime" min="1" max="300" placeholder="60" />
-                  <span class="unit">giây</span>
+            <!-- Bot behavior -->
+            <section class="settings-section" id="sec-bot">
+              <div class="settings-section-header">
+                <span class="settings-section-icon">🤖</span>
+                <div>
+                  <h3 data-i18n="settings.bot">Hành vi Bot</h3>
+                  <p data-i18n="settings.bot_desc">Thời gian chờ và giới hạn tương tác giữa các nhóm.</p>
                 </div>
               </div>
-              <div class="settings-row">
-                <div class="settings-row-label">
-                  <label for="settingLikeLimit">Giới hạn like / phiên</label>
-                  <span>Số lượt like tối đa bot thực hiện trong mỗi lần tương tác.</span>
+              <div class="settings-body">
+                <!-- Headless mode -->
+                <div class="settings-row">
+                  <div class="settings-row-label">
+                    <label data-i18n="settings.headless">Chế độ headless (ẩn trình duyệt)</label>
+                    <span data-i18n="settings.headless_desc">Bot chạy ẩn hoàn toàn, không hiện cửa sổ Chrome. Khuyến nghị bật khi đã test ổn định.</span>
+                  </div>
+                  <div class="settings-row-control">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                      <input type="checkbox" id="settingHeadless" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" onchange="document.getElementById('headlessLabel').textContent=this.checked?(document.documentElement.lang==='vi'?'Đang bật':'Enabled'):(document.documentElement.lang==='vi'?'Đang tắt':'Disabled')" />
+                      <span id="headlessLabel" style="font-size:13px;color:var(--text-muted);" data-i18n="settings.headless_off">Đang tắt</span>
+                    </label>
+                  </div>
                 </div>
-                <div class="settings-row-control">
-                  <input type="number" id="settingLikeLimit" min="0" max="500" placeholder="50" />
-                  <span class="unit">lượt</span>
+                <div class="settings-row">
+                  <div class="settings-row-label">
+                    <label for="settingWaitTime" data-i18n="settings.wait">Thời gian chờ giữa các nhóm</label>
+                    <span data-i18n="settings.wait_desc">Giây bot chờ sau khi đăng vào một nhóm trước khi chuyển sang nhóm tiếp theo.</span>
+                  </div>
+                  <div class="settings-row-control">
+                    <input type="number" id="settingWaitTime" min="1" max="300" placeholder="60" />
+                    <span class="unit" data-i18n="settings.wait_unit">giây</span>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-label">
+                    <label for="settingLikeLimit" data-i18n="settings.like">Giới hạn like / phiên</label>
+                    <span data-i18n="settings.like_desc">Số lượt like tối đa bot thực hiện trong mỗi lần tương tác.</span>
+                  </div>
+                  <div class="settings-row-control">
+                    <input type="number" id="settingLikeLimit" min="0" max="500" placeholder="50" />
+                    <span class="unit" data-i18n="settings.like_unit">lượt</span>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-label">
+                    <label for="settingCommentLimit" data-i18n="settings.comment">Giới hạn comment / phiên</label>
+                    <span data-i18n="settings.comment_desc">Số comment tối đa bot thực hiện trong mỗi lần tương tác.</span>
+                  </div>
+                  <div class="settings-row-control">
+                    <input type="number" id="settingCommentLimit" min="0" max="200" placeholder="10" />
+                    <span class="unit" data-i18n="settings.comment_unit">comment</span>
+                  </div>
                 </div>
               </div>
-              <div class="settings-row">
-                <div class="settings-row-label">
-                  <label for="settingCommentLimit">Giới hạn comment / phiên</label>
-                  <span>Số comment tối đa bot thực hiện trong mỗi lần tương tác.</span>
-                </div>
-                <div class="settings-row-control">
-                  <input type="number" id="settingCommentLimit" min="0" max="200" placeholder="10" />
-                  <span class="unit">comment</span>
-                </div>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          <!-- Media -->
-          <section class="settings-section">
-            <div class="settings-section-header">
-              <span class="settings-section-icon">🖼️</span>
-              <div>
-                <h3>Thư mục ảnh</h3>
-                <p>Đường dẫn thư mục chứa ảnh bot sẽ đính kèm khi đăng bài.</p>
-              </div>
-            </div>
-            <div class="settings-body">
-              <div class="settings-row">
-                <div class="settings-row-label">
-                  <label for="settingImageDir">Đường dẫn thư mục ảnh</label>
-                  <span>Ví dụ: C:/fb_images hoặc ./images</span>
-                </div>
-                <div class="settings-row-control" style="flex:1;">
-                  <input type="text" id="settingImageDir" placeholder="C:/fb_images" style="width:100%;max-width:320px;" />
+            <!-- Media -->
+            <section class="settings-section" id="sec-media">
+              <div class="settings-section-header">
+                <span class="settings-section-icon">🖼️</span>
+                <div>
+                  <h3 data-i18n="settings.media">Thư mục ảnh</h3>
+                  <p data-i18n="settings.media_desc">Đường dẫn thư mục chứa ảnh bot sẽ đính kèm khi đăng bài.</p>
                 </div>
               </div>
-            </div>
-          </section>
+              <div class="settings-body">
+                <div class="settings-row">
+                  <div class="settings-row-label">
+                    <label for="settingImageDir" data-i18n="settings.img_dir">Đường dẫn thư mục ảnh</label>
+                    <span>C:/fb_images hoặc ./images</span>
+                  </div>
+                  <div class="settings-row-control" style="flex:1;">
+                    <input type="text" id="settingImageDir" data-i18n-placeholder="settings.img_ph" placeholder="C:/fb_images" style="width:100%;max-width:320px;" />
+                  </div>
+                </div>
+              </div>
+            </section>
 
-          <!-- Save button -->
-          <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:8px;">
-            <button class="btn" type="button" onclick="loadSettings()">↺ Đặt lại</button>
-            <button class="btn btn-primary" type="button" onclick="saveSettings()">💾 Lưu cài đặt</button>
-          </div>
-
-          <!-- About -->
-          <section class="settings-section" style="margin-top:8px;">
-            <div class="settings-section-header">
-              <span class="settings-section-icon">ℹ️</span>
-              <div>
-                <h3>Thông tin</h3>
-                <p>Phiên bản và trạng thái hệ thống.</p>
-              </div>
+            <!-- Save -->
+            <div style="display:flex;justify-content:flex-end;gap:12px;">
+              <button class="btn" type="button" data-i18n="settings.reset" onclick="loadSettingsPage()">↺ Đặt lại</button>
+              <button class="btn btn-primary" id="saveSettingsBtn" type="button" data-i18n="settings.save" onclick="saveSettings()">💾 Lưu cài đặt</button>
             </div>
-            <div class="settings-body">
-              <div class="settings-row">
-                <div class="settings-row-label"><label>Phiên bản</label></div>
-                <div class="settings-row-control"><span class="badge badge-idle">v1.0.0</span></div>
-              </div>
-              <div class="settings-row">
-                <div class="settings-row-label"><label>Backend</label></div>
-                <div class="settings-row-control">
-                  <span id="backendStatus" class="badge badge-idle"><span class="dot dot-idle"></span> Đang kiểm tra...</span>
+
+            <!-- System info -->
+            <section class="settings-section" id="sec-system">
+              <div class="settings-section-header">
+                <span class="settings-section-icon">ℹ️</span>
+                <div>
+                  <h3 data-i18n="settings.system">Thông tin hệ thống</h3>
+                  <p data-i18n="settings.system_desc">Phiên bản, trạng thái kết nối và thông tin runtime.</p>
                 </div>
               </div>
-              <div class="settings-row">
-                <div class="settings-row-label"><label>Database</label></div>
-                <div class="settings-row-control">
-                  <span class="badge badge-success"><span class="dot dot-success"></span> MongoDB</span>
+              <div class="settings-body">
+                <div class="settings-row">
+                  <div class="settings-row-label"><label data-i18n="settings.version">Phiên bản</label></div>
+                  <div class="settings-row-control"><span class="badge badge-idle">v1.0.0</span></div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-label"><label data-i18n="settings.backend">Backend API</label></div>
+                  <div class="settings-row-control">
+                    <span id="backendStatus" class="badge badge-idle"><span class="dot dot-idle"></span> <span data-i18n="settings.checking">Đang kiểm tra...</span></span>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-label"><label data-i18n="settings.db">Database</label></div>
+                  <div class="settings-row-control">
+                    <span class="badge badge-success"><span class="dot dot-success"></span> MongoDB</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
 
-        </div>
+              <!-- System status cards -->
+              <div class="sys-status-grid">
+                <div class="sys-status-item">
+                  <span style="font-size:20px;">👥</span>
+                  <div>
+                    <div class="sys-status-label"><span id="sysGroupCount">—</span> <span data-i18n="settings.groups">Nhóm</span></div>
+                    <div class="sys-status-sub">đang quản lý</div>
+                  </div>
+                </div>
+                <div class="sys-status-item">
+                  <span style="font-size:20px;">📅</span>
+                  <div>
+                    <div class="sys-status-label"><span id="sysSchedCount">—</span> <span data-i18n="settings.schedules">Lịch</span></div>
+                    <div class="sys-status-sub">đang kích hoạt</div>
+                  </div>
+                </div>
+                <div class="sys-status-item">
+                  <span style="font-size:20px;">📋</span>
+                  <div>
+                    <div class="sys-status-label"><span id="sysLogCount">—</span> Logs</div>
+                    <div class="sys-status-sub">đã ghi nhận</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+          </div><!-- /.settings-content -->
+        </div><!-- /.settings-two-col -->
       </main>
     </div>
+
     <div id="toastContainer" class="toast-container"></div>
+
+    <script src="../html/theme.js" defer></script>
+    <script src="../html/i18n.js" defer></script>
+    <script src="../html/api.js" defer></script>
+    <script src="../html/app.js" defer></script>
+    <script src="../html/script.js" defer></script>
+    <script>
+      // Sidebar collapse
+      const sw = document.getElementById('sidebarWrapper'), sb = document.getElementById('sidebar'), st = document.getElementById('sidebarToggle');
+      function applyCollapsed(c) {
+        sw?.classList.toggle('collapsed',c); sb?.classList.toggle('collapsed',c);
+        const p = st?.querySelector('polyline'); if(p) p.setAttribute('points',c?'1,1 5,6 1,11':'5,1 1,6 5,11');
+        localStorage.setItem('fbbot-sidebar',c?'1':'0');
+      }
+      applyCollapsed(localStorage.getItem('fbbot-sidebar')==='1');
+      st?.addEventListener('click',()=>applyCollapsed(!sw?.classList.contains('collapsed')));
+
+      function toggleSidebarFromSettings() { applyCollapsed(!sw?.classList.contains('collapsed')); }
+
+      // Language
+      async function changeLang(lang) {
+        window.applyLang?.(lang);
+        try { await saveLanguage(lang); } catch (_) {}
+        // Cập nhật lại theme label theo ngôn ngữ mới
+        if (typeof _syncAllThemeButtons === 'function') {
+          const t = document.documentElement.getAttribute('data-theme') || 'dark';
+          _syncAllThemeButtons(t);
+        }
+        if (typeof showToast === 'function') {
+          showToast('success', lang === 'vi' ? 'Đã chuyển sang Tiếng Việt 🇻🇳' : 'Switched to English 🇺🇸');
+        }
+      }
+
+      // Theme — handled by theme.js (window.toggleTheme)
+      document.addEventListener('DOMContentLoaded', () => {
+        // Sync dropdown ngôn ngữ
+        const sel = document.getElementById('langSelect');
+        if (sel) sel.value = localStorage.getItem('fbbot-lang') || 'vi';
+      });
+
+      // Settings nav scroll
+      function scrollTo(id, el) {
+        document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});
+        document.querySelectorAll('.settings-nav a').forEach(a=>a.classList.remove('active'));
+        el.classList.add('active');
+      }
+
+      // System stats
+      document.addEventListener('DOMContentLoaded', () => {
+        const orig = window.renderDashboardSummary;
+        window.renderDashboardSummary = function() {
+          orig?.();
+          const groups = window.state?.groups || [];
+          const scheds = window.state?.schedules;
+          const logs = window.state?.logs || [];
+          const totalSched = (scheds?.posts?.length||0)+(scheds?.reposts?.length||0)+(scheds?.interacts?.length||0);
+          const el1 = document.getElementById('sysGroupCount'), el2 = document.getElementById('sysSchedCount'), el3 = document.getElementById('sysLogCount');
+          if(el1) el1.textContent = groups.length;
+          if(el2) el2.textContent = totalSched;
+          if(el3) el3.textContent = logs.length;
+        };
+      });
+    </script>
   </body>
 </html>

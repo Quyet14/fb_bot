@@ -21,16 +21,43 @@ def dong_chrome():
         pass
 
 
-def tao_driver():
+def tao_driver(headless: bool = False):
     options = webdriver.ChromeOptions()
     options.add_argument("--user-data-dir=C:/fb_session")
     options.add_argument("--start-maximized")
     options.add_argument("--no-first-run")
     options.add_argument("--no-default-browser-check")
-    return webdriver.Chrome(
+
+    if headless:
+        # Dùng --headless=new (Chrome 112+) thay vì --headless cũ
+        # Vẫn có thể bị Facebook detect — nếu bị block thì dùng window-position ẩn
+        options.add_argument("--headless=new")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option("useAutomationExtension", False)
+    else:
+        # Background mode: chạy ẩn màn hình (không headless) —
+        # an toàn hơn với Facebook vì render như browser thật
+        options.add_argument("--window-position=-32000,-32000")  # đẩy ra ngoài màn hình
+
+    driver = webdriver.Chrome(
         service=ChromeService(ChromeDriverManager().install()),
         options=options
     )
+
+    # Ẩn webdriver fingerprint — Facebook dùng navigator.webdriver để detect bot
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": """
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            Object.defineProperty(navigator, 'languages', { get: () => ['vi-VN', 'vi', 'en-US', 'en'] });
+            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+            window.chrome = { runtime: {} };
+        """
+    })
+
+    return driver
 
 
 def paste_vao_element(driver, element, noi_dung, debug_prefix: str = ""):

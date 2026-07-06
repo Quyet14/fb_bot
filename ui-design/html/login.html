@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng nhập · FB Bot Console</title>
+  <script>
+    (function () {
+      try { var t = localStorage.getItem('fbbot-theme'); document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light'); } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="/html/css/tokens.css" />
+  <link rel="stylesheet" href="/html/css/base.css" />
+  <link rel="stylesheet" href="/html/css/components.css" />
+  <style>
+    html, body { height:100%;margin:0;display:flex;flex-direction:column;min-height:100vh; }
+
+    .auth-bg {
+      flex:1;display:flex;align-items:center;justify-content:center;
+      padding:24px 16px;background:var(--bg);position:relative;overflow:hidden;
+    }
+    .auth-bg::before,.auth-bg::after {
+      content:'';position:absolute;border-radius:50%;
+      filter:blur(90px);opacity:0.15;pointer-events:none;
+      animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate;
+    }
+    .auth-bg::before { width:500px;height:500px;background:radial-gradient(circle,#38bdf8,#a78bfa);top:-120px;left:-120px;animation:blob1 12s; }
+    .auth-bg::after  { width:400px;height:400px;background:radial-gradient(circle,#34d399,#a78bfa);bottom:-100px;right:-100px;animation:blob2 15s; }
+    @keyframes blob1 { to { transform:translate(60px,40px) scale(1.1); } }
+    @keyframes blob2 { to { transform:translate(-50px,-30px) scale(1.05); } }
+
+    .auth-card {
+      background:var(--glass);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+      border:1px solid var(--glass-border);border-radius:var(--radius);
+      padding:36px 32px 28px;width:100%;max-width:420px;
+      box-shadow:var(--shadow-lift);position:relative;z-index:1;
+      animation:surfaceIn .4s var(--ease) backwards;
+    }
+
+    .auth-brand { display:flex;align-items:center;gap:10px;margin-bottom:24px; }
+    .auth-brand-icon {
+      width:44px;height:44px;border-radius:14px;
+      background:linear-gradient(135deg,#38bdf8,#a78bfa);
+      display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;
+    }
+    .auth-brand-text { font-size:16px;font-weight:700;color:var(--text); }
+    .auth-brand-sub  { font-size:12px;color:var(--text-muted); }
+
+    .auth-title { font-size:22px;font-weight:700;margin:0 0 4px;color:var(--text); }
+    .auth-sub   { font-size:13.5px;color:var(--text-muted);margin:0 0 22px; }
+
+    .field { margin-bottom:14px; }
+    .field label { display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:5px; }
+    .field input { width:100%;box-sizing:border-box; }
+
+    .pw-toggle-wrap { position:relative; }
+    .pw-toggle-wrap input { padding-right:40px; }
+    .pw-toggle {
+      position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-faint);padding:2px;line-height:1;
+    }
+    .pw-toggle:hover { color:var(--text); }
+
+    .auth-error {
+      background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+      border-radius:var(--radius-sm);color:var(--danger,#ef4444);
+      font-size:13px;padding:10px 14px;margin-bottom:14px;display:none;
+    }
+    .auth-error.show { display:block; }
+
+    .btn-submit { width:100%;margin-top:6px;padding:13px;font-size:15px;font-weight:700; }
+
+    .or-divider {
+      display:flex;align-items:center;gap:10px;margin:20px 0;
+      color:var(--text-faint);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+    }
+    .or-divider::before,.or-divider::after { content:'';flex:1;height:1px;background:var(--border-soft); }
+
+    .social-btns { display:flex;gap:10px; }
+    .btn-social {
+      flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+      padding:11px 12px;border-radius:var(--radius-sm);
+      background:var(--glass);backdrop-filter:blur(8px);
+      border:1px solid var(--glass-border);color:var(--text);
+      font-size:13.5px;font-weight:600;cursor:pointer;
+      transition:background .2s,border-color .2s,transform .15s;text-decoration:none;
+    }
+    .btn-social:hover { background:var(--surface-2);border-color:var(--accent);transform:translateY(-2px); }
+    .btn-social .s-icon { font-size:18px;line-height:1; }
+
+    .auth-footer { margin-top:18px;text-align:center;font-size:13px;color:var(--text-muted); }
+    .auth-footer a { color:var(--accent);text-decoration:none;font-weight:600; }
+    .auth-footer a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body class="page-auth">
+
+  <header class="global-bar" style="position:sticky;top:0;z-index:1000;">
+    <div class="global-bar-left">
+      <a href="dashboard.html" class="global-bar-logo">
+        <span style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🤖</span>
+        <span class="global-bar-logo-text">FB Bot Console</span>
+      </a>
+    </div>
+    <div class="global-bar-right"></div>
+  </header>
+
+  <div class="auth-bg">
+    <div class="auth-card">
+
+      <div class="auth-brand">
+        <div class="auth-brand-icon">🤖</div>
+        <div>
+          <div class="auth-brand-text">FB Bot Console</div>
+          <div class="auth-brand-sub">Quản lý tự động hóa Facebook</div>
+        </div>
+      </div>
+
+      <h1 class="auth-title">🔐 Đăng nhập</h1>
+      <p class="auth-sub">Nhập thông tin tài khoản của bạn để tiếp tục.</p>
+
+      <div class="auth-error" id="authError" role="alert"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="loginUsername">Tên đăng nhập hoặc Email</label>
+          <input id="loginUsername" name="username" type="text"
+                 autocomplete="username" placeholder="admin hoặc you@example.com"
+                 required autofocus />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Mật khẩu</label>
+          <div class="pw-toggle-wrap">
+            <input id="loginPassword" name="password" type="password"
+                   autocomplete="current-password" placeholder="••••••••" required />
+            <button type="button" class="pw-toggle" onclick="togglePw('loginPassword',this)" title="Hiện/ẩn">👁</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-submit" id="loginBtn">
+          Đăng nhập →
+        </button>
+      </form>
+
+      <!-- Social login -->
+      <div class="or-divider">hoặc đăng nhập với</div>
+      <div class="social-btns">
+        <button class="btn-social google" onclick="socialLogin('google')" type="button">
+          <span class="s-icon">🔍</span> Google
+        </button>
+        <button class="btn-social facebook" onclick="socialLogin('facebook')" type="button">
+          <span class="s-icon">📘</span> Facebook
+        </button>
+      </div>
+
+      <div class="auth-footer" id="registerLink" style="display:none;">
+        Chưa có tài khoản? <a href="register.html">Đăng ký ngay</a>
+      </div>
+      <div class="auth-footer" style="margin-top:10px;">
+        <a href="index.html" style="display:inline-flex;align-items:center;gap:5px;color:var(--text-faint);text-decoration:none;font-size:12.5px;font-weight:500;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-faint)'">← Quay lại trang chủ</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+  <script src="/html/theme.js" defer></script>
+  <script>
+    // ── Cấu hình API URL khi dùng qua ngrok/internet ──
+    // Thay URL bên dưới bằng ngrok URL của backend (port 8000)
+    // Ví dụ: window.FBBOT_API_URL = 'https://abc123.ngrok-free.dev';
+    window.FBBOT_API_URL = '';  // ← điền vào đây sau khi chạy ngrok http 8000
+  </script>
+  <script src="/html/auth.js"></script>
+  <script src="/html/script.js" defer></script>
+  <script>
+    // Nếu đã đăng nhập → redirect dashboard
+    if (Auth.getAccessToken()) window.location.href = 'dashboard.html';
+
+    // Kiểm tra ALLOW_REGISTER
+    Auth._findApiBase().then(base =>
+      fetch(`${base}/auth/config`).then(r => r.json()).then(cfg => {
+        if (cfg.allow_register) document.getElementById('registerLink').style.display = 'block';
+      }).catch(() => {})
+    );
+
+    function togglePw(id, btn) {
+      const inp = document.getElementById(id);
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('loginBtn');
+      const errEl = document.getElementById('authError');
+      errEl.classList.remove('show');
+
+      if (!username || !password) {
+        errEl.textContent = 'Vui lòng nhập đầy đủ thông tin.';
+        errEl.classList.add('show');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Đang đăng nhập...';
+
+      try {
+        await Auth.login(username, password);
+      } catch (err) {
+        errEl.textContent = err.message || 'Đăng nhập thất bại.';
+        errEl.classList.add('show');
+        btn.disabled = false;
+        btn.textContent = 'Đăng nhập →';
+      }
+    });
+
+    function socialLogin(provider) {
+      alert(`Đăng nhập với ${provider === 'google' ? 'Google' : 'Facebook'}:\n\nTính năng này cần cấu hình App ID.\nThêm vào file .env:\n${provider === 'google' ? 'GOOGLE_CLIENT_ID=...' : 'FACEBOOK_APP_ID=...'}\n\nSau khi cấu hình xong, nút này sẽ mở OAuth flow.`);
+    }
+
+    document.getElementById('themeBtn')?.addEventListener('click', () => {
+      window.toggleTheme?.();
+      const light = document.documentElement.getAttribute('data-theme') === 'light';
+      document.getElementById('themeBtn').textContent = light ? '☀️' : '🌙';
+    });
+  </script>
+</body>
+</html>

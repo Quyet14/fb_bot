@@ -212,6 +212,8 @@ class AppSettingsOut(BaseModel):
     gioi_han_like: int
     gioi_han_comment: int
     thoi_gian_cho_giua_cac_nhom: int
+    ngon_ngu: str = "vi"
+    headless_mode: bool = False
 
 
 class AppSettingsUpdate(BaseModel):
@@ -219,6 +221,8 @@ class AppSettingsUpdate(BaseModel):
     gioi_han_like: Optional[int] = None
     gioi_han_comment: Optional[int] = None
     thoi_gian_cho_giua_cac_nhom: Optional[int] = None
+    ngon_ngu: Optional[str] = None
+    headless_mode: Optional[bool] = None
 
 
 # ============================================================
