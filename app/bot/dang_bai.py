@@ -11,6 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from app.bot.gemini import goi_gemini_viet_bai, goi_gemini_viet_lai_bai
 from app.bot.browser import dong_chrome, tao_driver, paste_vao_element, lay_anh_ngau_nhien
+from app.config import settings as app_config
 
 
 def dang_mot_nhom(driver, wait, url_nhom, noi_dung, duong_dan_anh=None):
@@ -217,7 +218,7 @@ def thuc_thi_tien_trinh_dang(
         return False, "Không có nhóm nào để đăng."
 
     try:
-        driver = tao_driver()
+        driver = tao_driver(headless=app_config.HEADLESS_MODE)
 
         wait = WebDriverWait(driver, 30)
         driver.get("https://www.facebook.com")

@@ -10,9 +10,16 @@ from apscheduler.triggers.cron import CronTrigger
 from app import models, crud
 from app.config import settings
 from app.database import SessionLocal
+from app.bot import browser as bot_browser
 from app.bot.dang_bai import thuc_thi_tien_trinh_dang
 from app.bot.repost import thuc_thi_tien_trinh_repost
 from app.bot.tuong_tac import thuc_thi_tien_trinh_tuong_tac
+
+
+def _sync_headless_from_db(cfg):
+    """Cập nhật HEADLESS_MODE từ DB settings trước khi chạy job."""
+    headless = getattr(cfg, 'headless_mode', settings.HEADLESS_MODE)
+    settings.HEADLESS_MODE = headless
 
 THU_SANG_SO = {
     "monday": "mon", "tuesday": "tue", "wednesday": "wed",
@@ -40,6 +47,8 @@ def _lay_cau_hinh_hien_tai(db):
         "gioi_han_like": settings.GIOI_HAN_LIKE_MAC_DINH,
         "gioi_han_comment": settings.GIOI_HAN_COMMENT_MAC_DINH,
         "thoi_gian_cho_giua_cac_nhom": settings.THOI_GIAN_CHO_MAC_DINH,
+        "ngon_ngu": "vi",
+        "headless_mode": settings.HEADLESS_MODE,
     })
     return cfg
 
@@ -54,6 +63,7 @@ def job_dang_bai(schedule_id: int):
         if not sch or not sch.active:
             return
         cfg = _lay_cau_hinh_hien_tai(db)
+        _sync_headless_from_db(cfg)
         log = crud.create_log(db, "dang_bai", schedule_id)
         # Chế độ đăng bài:
         # - Nếu có content (đã resolve): dùng nội dung người dùng (giữ nguyên hoặc nhờ Gemini viết lại)
@@ -74,7 +84,6 @@ def job_dang_bai(schedule_id: int):
             return
 
         thanh_cong, chi_tiet = thuc_thi_tien_trinh_dang(
-
             chu_de=chu_de,
             noi_dung_goc=noi_dung_goc,
             giu_nguyen_goc=getattr(sch, "giu_nguyen_goc", True),
@@ -96,6 +105,7 @@ def job_repost(schedule_id: int):
         if not sch or not sch.active:
             return
         cfg = _lay_cau_hinh_hien_tai(db)
+        _sync_headless_from_db(cfg)
         log = crud.create_log(db, "repost", schedule_id)
         thanh_cong, chi_tiet = thuc_thi_tien_trinh_repost(
             nhom_nguon_urls=[g.url for g in sch.nhom_nguon],
@@ -115,6 +125,7 @@ def job_tuong_tac(schedule_id: int):
         if not sch or not sch.active:
             return
         cfg = _lay_cau_hinh_hien_tai(db)
+        _sync_headless_from_db(cfg)
         log = crud.create_log(db, "tuong_tac", schedule_id)
         thanh_cong, chi_tiet = thuc_thi_tien_trinh_tuong_tac(
             nhom_urls=[g.url for g in sch.groups],

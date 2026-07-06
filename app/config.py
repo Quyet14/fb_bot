@@ -27,6 +27,13 @@ class Settings:
     GIOI_HAN_LIKE_MAC_DINH: int = int(os.getenv("GIOI_HAN_LIKE", 5))
     GIOI_HAN_COMMENT_MAC_DINH: int = int(os.getenv("GIOI_HAN_COMMENT", 3))
     THOI_GIAN_CHO_MAC_DINH: int = int(os.getenv("THOI_GIAN_CHO_GIUA_CAC_NHOM", 150))
+    HEADLESS_MODE: bool = os.getenv("HEADLESS_MODE", "false").lower() in {"1", "true", "yes", "y", "on"}
+
+    # Auth
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "")
+    JWT_ACCESS_EXPIRE_MINUTES: int = int(os.getenv("JWT_ACCESS_EXPIRE_MINUTES", "60"))
+    JWT_REFRESH_EXPIRE_DAYS: int = int(os.getenv("JWT_REFRESH_EXPIRE_DAYS", "30"))
+    ALLOW_REGISTER: bool = os.getenv("ALLOW_REGISTER", "true").lower() in {"1", "true", "yes", "y", "on"}
 
 
 settings = Settings()

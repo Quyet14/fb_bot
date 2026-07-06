@@ -156,3 +156,22 @@ class AppSettings(Base):
     gioi_han_like = Column(Integer, default=5)
     gioi_han_comment = Column(Integer, default=3)
     thoi_gian_cho_giua_cac_nhom = Column(Integer, default=150)
+    ngon_ngu = Column(String(10), default="vi")
+    headless_mode = Column(Boolean, default=False)
+
+
+# ============================================================
+# NGUOI DUNG (authentication)
+# ============================================================
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(String(36), primary_key=True, index=True)
+    username = Column(String(100), nullable=False, unique=True, index=True)
+    full_name = Column(String(200), nullable=True)
+    email = Column(String(200), nullable=True, unique=True, index=True)
+    hashed_password = Column(String(200), nullable=False, default="")
+    role = Column(String(20), nullable=False, default="admin")
+    is_active = Column(Boolean, default=True)
+    provider = Column(String(20), nullable=False, default="local")  # local | google | facebook
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)

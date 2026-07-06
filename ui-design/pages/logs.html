@@ -1,65 +1,351 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Logs hoạt động · FB Bot</title>
+    <title>Logs hoạt động · FB Bot Console</title>
     <script>
       (function () {
         try {
-          if (localStorage.getItem('fbbot-theme') === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
-          }
-        } catch (error) {}
+          var t = localStorage.getItem('fbbot-theme');
+          document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+        } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="../html/styles.css?v=2" />
-    <script src="../html/theme.js?v=2" defer></script>
-    <script src="../html/api.js?v=3" defer></script>
-    <script src="../html/app.js?v=3" defer></script>
+    <link rel="stylesheet" href="../html/css/tokens.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/base.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/components.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/responsive.css?v=202607061201" />
+    <style>
+      /* ── Log list ── */
+      .log-filters {
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      .filter-btn {
+        padding: 6px 14px; border-radius: var(--radius-pill); font-size: 12.5px; font-weight: 600;
+        border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted);
+        cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 5px;
+      }
+      .filter-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+      .filter-btn:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+      .log-search {
+        margin-left: auto;
+        padding: 7px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        background: var(--bg-soft);
+        color: var(--text);
+        font-size: 13px; font-family: var(--font-body);
+        outline: none; width: 220px;
+        transition: border-color .15s, box-shadow .15s;
+      }
+      .log-search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+      .log-search::placeholder { color: var(--text-faint); }
+
+      /* ── Log items ── */
+      .log-list { display: flex; flex-direction: column; gap: 6px; padding: 14px; }
+
+      .log-item {
+        display: grid;
+        grid-template-columns: 140px 110px 110px 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border: 1px solid var(--border-soft);
+        background: var(--bg);
+        border-radius: var(--radius-sm);
+        transition: border-color .15s, background .15s, transform .15s var(--ease);
+        animation: surfaceIn 0.3s var(--ease) backwards;
+      }
+      .log-item:hover { background: var(--surface); border-color: var(--border); transform: translateX(3px); }
+      .log-item.success { border-left: 3px solid var(--success); }
+      .log-item.error   { border-left: 3px solid var(--danger); }
+      .log-item.warning { border-left: 3px solid var(--warning); }
+
+      .log-time { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); }
+      .log-type { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+      .log-status { }
+      .log-detail { font-size: 12.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .log-expand { font-size: 11px; color: var(--text-faint); cursor: pointer; padding: 2px 6px; border-radius: 5px; border: 1px solid var(--border-soft); background: none; transition: all .15s; }
+      .log-expand:hover { border-color: var(--accent); color: var(--accent); }
+
+      /* ── Stats ── */
+      .page-stat-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+      .mini-stat {
+        background: var(--glass); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border); border-radius: var(--radius-sm);
+        padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+        box-shadow: var(--shadow); animation: surfaceIn 0.35s var(--ease) backwards;
+      }
+      .mini-stat:nth-child(1){animation-delay:.02s} .mini-stat:nth-child(2){animation-delay:.05s} .mini-stat:nth-child(3){animation-delay:.08s} .mini-stat:nth-child(4){animation-delay:.11s}
+      .mini-stat-icon { width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:var(--accent-soft);box-shadow:inset 0 1px 1px var(--glass-rim); }
+      .mini-stat-body .val { font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--text); }
+      .mini-stat-body .lbl { font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700; }
+
+      /* ── Panel card ── */
+      .panel-card {
+        background: var(--glass); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border); border-radius: var(--radius);
+        overflow: hidden; box-shadow: var(--shadow);
+        animation: surfaceIn 0.45s var(--ease) backwards; animation-delay: 0.1s;
+      }
+      .panel-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px 14px; border-bottom: 1px solid var(--border-soft);
+        background: linear-gradient(90deg, var(--bg-soft), transparent);
+        flex-wrap: wrap; gap: 10px;
+      }
+      .panel-head h3 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+      /* ── Live indicator ── */
+      .live-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 11.5px; font-weight: 700; color: var(--success);
+        background: var(--success-soft); border-radius: var(--radius-pill);
+        padding: 3px 10px; border: 1px solid rgba(52, 211, 153, 0.3);
+      }
+
+      @media (max-width: 760px) {
+        .page-stat-bar { grid-template-columns: repeat(2,1fr); }
+        .log-item { grid-template-columns: 1fr auto; grid-template-rows: auto auto; }
+        .log-time, .log-type, .log-status { font-size: 11px; }
+        .log-detail { grid-column: 1/-1; }
+      }
+    </style>
   </head>
   <body class="page-logs">
-    <div class="app">
-      <aside class="sidebar">
 
-        <nav>
-          <a href="../html/index.html" class="nav-dashboard">
-            <span class="nav-icon">🏠</span><span class="nav-label"> Dashboard</span>
-          </a>
-          <a href="groups.html" class="nav-groups">
-            <span class="nav-icon">👥</span><span class="nav-label"> Nhóm</span>
-          </a>
-          <a href="topics.html" class="nav-topics">
-            <span class="nav-icon">🏷️</span><span class="nav-label"> Chủ đề</span>
-          </a>
-          <a href="schedules.html" class="nav-schedules">
-            <span class="nav-icon">📅</span><span class="nav-label"> Lịch đăng</span>
-          </a>
-          <a href="logs.html" class="nav-logs active">
-            <span class="nav-icon">📋</span><span class="nav-label"> Logs</span>
-          </a>
-        </nav>
-      </aside>
+    <!-- ══ GLOBAL BAR ══ -->
+    <header class="global-bar">
+      <div class="global-bar-left">
+        <a href="../html/dashboard.html" class="global-bar-logo">
+          <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
+          <span class="global-bar-logo-text">FB Bot Console</span>
+        </a>
+        <div class="global-bar-sep"></div>
+        <div class="global-status-dot">
+          <span class="dot dot-success"></span>
+          <span class="global-status-label" data-i18n="bar.online">Online</span>
+        </div>
+      </div>
+      <div class="global-bar-right">
+        <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
+        <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+      </div>
+    </header>
+
+    <div class="app">
+      <div class="sidebar-wrapper" id="sidebarWrapper">
+        <aside class="sidebar" id="sidebar">
+          <nav>
+            <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
+            <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+            <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ đề</span></a>
+            <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch đăng</span></a>
+            <a href="logs.html" class="nav-logs active"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+          </nav>
+          <div class="sidebar-status">
+            <span class="dot dot-success"></span>
+            <div class="sidebar-status-text">
+              <span class="label" data-i18n="common.bot_running">Bot đang chạy</span>
+              <span class="sub" data-i18n="common.version">v1.0.0 · API online</span>
+            </div>
+          </div>
+        </aside>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Thu gọn">
+          <svg viewBox="0 0 7 12"><polyline points="5,1 1,6 5,11"/></svg>
+        </button>
+      </div>
+
       <main class="main">
         <header class="topbar">
           <div>
-            <h2>Logs hoạt động</h2>
-            <p class="sub">Lịch sử chạy của bot: đăng bài, repost, tương tác.</p>
+            <span class="eyebrow"><span class="dot"></span data-i18n="logs.eyebrow"> Nhật ký</span>
+            <h2 data-i18n="logs.title">Logs hoạt động</h2>
+            <p class="sub" data-i18n="logs.sub">Lịch sử chạy của bot: đăng bài, repost, tương tác theo thời gian thực.</p>
+          </div>
+          <div class="topbar-hero-shapes" aria-hidden="true">
+            <div class="hero-shape">📋</div>
+            <div class="hero-shape">✅</div>
+            <div class="hero-shape">⚠️</div>
           </div>
         </header>
 
+        <!-- Stats -->
+        <div class="page-stat-bar">
+          <div class="mini-stat" style="--accent:var(--c-logs); --accent-soft:var(--c-logs-soft);">
+            <div class="mini-stat-icon">📋</div>
+            <div class="mini-stat-body"><div class="val" id="totalLogsCount">—</div><div class="lbl" data-i18n="logs.total">Tổng log</div></div>
+          </div>
+          <div class="mini-stat" style="--accent:var(--c-schedules); --accent-soft:var(--c-schedules-soft);">
+            <div class="mini-stat-icon">✅</div>
+            <div class="mini-stat-body"><div class="val" id="successLogsCount">—</div><div class="lbl">Thành công</div></div>
+          </div>
+          <div class="mini-stat" style="--accent:var(--c-topics); --accent-soft:var(--c-topics-soft);">
+            <div class="mini-stat-icon">⚠️</div>
+            <div class="mini-stat-body"><div class="val" id="errorLogsCount">—</div><div class="lbl">Lỗi</div></div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-icon">🕐</div>
+            <div class="mini-stat-body"><div class="val" id="todayLogsCount">—</div><div class="lbl">Hôm nay</div></div>
+          </div>
+        </div>
+
         <div id="status"></div>
 
-        <div class="panel" style="margin-top:16px;">
-          <table id="logsTable">
-            <thead>
-              <tr><th>Thời gian</th><th>Loại</th><th>Trạng thái</th><th>Chi tiết</th></tr>
-            </thead>
+        <!-- Panel log nâng cao -->
+        <div class="panel-card">
+          <div class="panel-head">
+            <h3><span>📋</span> Nhật ký hoạt động <span class="live-badge"><span class="dot dot-success"></span> Live</span></h3>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button class="filter-btn" onclick="refreshLogs()" data-i18n="logs.refresh">🔄 Làm mới</button>
+            </div>
+          </div>
+
+          <!-- Bộ lọc -->
+          <div style="padding: 14px 14px 0;">
+            <div class="log-filters">
+              <button class="filter-btn active" onclick="setLogFilter('all', this)">Tất cả</button>
+              <button class="filter-btn" onclick="setLogFilter('success', this)">✅ Thành công</button>
+              <button class="filter-btn" onclick="setLogFilter('error', this)">❌ Lỗi</button>
+              <button class="filter-btn" onclick="setLogFilter('dang-bai', this)">📝 Đăng bài</button>
+              <button class="filter-btn" onclick="setLogFilter('repost', this)">🔁 Repost</button>
+              <button class="filter-btn" onclick="setLogFilter('tuong-tac', this)">💬 Tương tác</button>
+              <input type="search" class="log-search" id="logSearch" placeholder="🔍 Tìm kiếm log..." oninput="filterLogs()" />
+            </div>
+          </div>
+
+          <!-- Log items -->
+          <div id="logListView" class="log-list">
+            <div style="text-align:center; color:var(--text-faint); padding:32px; font-size:13.5px;">
+              <div style="font-size:32px; margin-bottom:12px;">📋</div>
+              Đang tải dữ liệu log...
+            </div>
+          </div>
+
+          <!-- fallback table (dùng bởi app.js) -->
+          <table id="logsTable" style="display:none;">
+            <thead><tr><th>Thời gian</th><th>Loại</th><th>Trạng thái</th><th>Chi tiết</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
       </main>
     </div>
+
     <div id="toastContainer" class="toast-container"></div>
+
+    <script src="../html/theme.js" defer></script>
+    <script src="../html/i18n.js" defer></script>
+    <script src="../html/api.js" defer></script>
+    <script src="../html/app.js" defer></script>
+    <script src="../html/script.js" defer></script>
+    <script>
+      // Sidebar collapse
+      const sw = document.getElementById('sidebarWrapper'), sb = document.getElementById('sidebar'), st = document.getElementById('sidebarToggle');
+      function applyCollapsed(c) {
+        sw?.classList.toggle('collapsed',c); sb?.classList.toggle('collapsed',c);
+        const p = st?.querySelector('polyline'); if(p) p.setAttribute('points',c?'1,1 5,6 1,11':'5,1 1,6 5,11');
+        localStorage.setItem('fbbot-sidebar',c?'1':'0');
+      }
+      applyCollapsed(localStorage.getItem('fbbot-sidebar')==='1');
+      st?.addEventListener('click',()=>applyCollapsed(!sw?.classList.contains('collapsed')));
+
+      // Theme
+      function syncThemeBtns() {
+        const light = document.documentElement.getAttribute('data-theme')==='light';
+        const s2 = document.getElementById('sidebarThemeBtn'); if(s2) s2.querySelector('.icon').textContent=light?'🌙':'☀️';
+        const tb = document.getElementById('themeBtn'); if(tb) tb.textContent=light?'☀️':'🌙';
+      }
+      document.getElementById('themeBtn')?.addEventListener('click',()=>{window.toggleTheme?.();syncThemeBtns();});
+      document.getElementById('sidebarThemeBtn')?.addEventListener('click',()=>{window.toggleTheme?.();syncThemeBtns();});
+      document.addEventListener('DOMContentLoaded',syncThemeBtns);
+
+      // ── Log filter state ──
+      let _logFilter = 'all';
+      const TYPE_LABELS = { 'dang-bai':'Đăng bài','repost':'Repost','tuong-tac':'Tương tác','interact':'Tương tác','post':'Đăng bài' };
+      const TYPE_ICONS  = { 'dang-bai':'📝','repost':'🔁','tuong-tac':'💬','interact':'💬','post':'📝' };
+
+      function setLogFilter(f, el) {
+        _logFilter = f;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        renderLogItems();
+      }
+
+      function filterLogs() { renderLogItems(); }
+
+      function refreshLogs() {
+        window.loadData?.();
+        if(typeof showToast==='function') showToast('info','Đang làm mới logs...');
+      }
+
+      function renderLogItems() {
+        const list = document.getElementById('logListView');
+        if (!list) return;
+        let logs = window.state?.logs || [];
+        const q = document.getElementById('logSearch')?.value?.toLowerCase() || '';
+
+        // Filter by type
+        if (_logFilter === 'success') logs = logs.filter(l => l.trang_thai === 'success');
+        else if (_logFilter === 'error') logs = logs.filter(l => l.trang_thai === 'error');
+        else if (_logFilter !== 'all') logs = logs.filter(l => String(l.loai||'').toLowerCase().includes(_logFilter));
+
+        // Filter by search
+        if (q) logs = logs.filter(l =>
+          String(l.chi_tiet||'').toLowerCase().includes(q) ||
+          String(l.loai||'').toLowerCase().includes(q) ||
+          String(l.trang_thai||'').toLowerCase().includes(q)
+        );
+
+        if (!logs.length) {
+          list.innerHTML = `<div style="text-align:center;color:var(--text-faint);padding:40px;font-size:13.5px;">
+            <div style="font-size:32px;margin-bottom:12px;">${_logFilter === 'error' ? '🎉' : '📭'}</div>
+            ${_logFilter === 'error' ? 'Không có lỗi nào — bot đang chạy tốt!' : 'Không tìm thấy log nào.'}
+          </div>`;
+          return;
+        }
+
+        list.innerHTML = logs.map((log, i) => {
+          const status = log.trang_thai || '';
+          const statusCls = status === 'success' ? 'success' : status === 'error' ? 'error' : 'warning';
+          const badgeCls = status === 'success' ? 'badge-success' : status === 'error' ? 'badge-danger' : 'badge-warning';
+          const dotCls = status === 'success' ? 'dot-success' : status === 'error' ? 'dot-danger' : 'dot-warning';
+          const typeKey = String(log.loai||'').toLowerCase();
+          const typeIcon = TYPE_ICONS[typeKey] || '🔹';
+          const typeLabel = TYPE_LABELS[typeKey] || escapeHtml(log.loai||'');
+          const time = String(log.bat_dau||'').replace('T',' ').slice(0,16);
+          const detail = log.chi_tiet ? escapeHtml(String(log.chi_tiet).slice(0,80)) + (log.chi_tiet.length > 80 ? '…' : '') : '—';
+
+          return `<div class="log-item ${statusCls}" style="animation-delay:${i*0.025}s">
+            <span class="log-time">${escapeHtml(time)}</span>
+            <span class="log-type">${typeIcon} ${typeLabel}</span>
+            <span class="log-status"><span class="badge ${badgeCls}"><span class="dot ${dotCls}"></span>${escapeHtml(status)}</span></span>
+            <span class="log-detail" title="${escapeHtml(log.chi_tiet||'')}">${detail}</span>
+            ${log.chi_tiet && log.chi_tiet.length > 80 ? `<button class="log-expand" onclick="alert('${escapeHtml(log.chi_tiet).replace(/'/g,"\\'")}')">↗</button>` : '<span></span>'}
+          </div>`;
+        }).join('');
+      }
+
+      function updateLogStats() {
+        const logs = window.state?.logs || [];
+        const today = new Date().toISOString().slice(0,10);
+        document.getElementById('totalLogsCount').textContent = logs.length;
+        document.getElementById('successLogsCount').textContent = logs.filter(l=>l.trang_thai==='success').length;
+        document.getElementById('errorLogsCount').textContent = logs.filter(l=>l.trang_thai==='error').length;
+        document.getElementById('todayLogsCount').textContent = logs.filter(l=>String(l.bat_dau||'').startsWith(today)).length;
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const orig = window.renderLogs;
+        window.renderLogs = function() {
+          orig?.();
+          renderLogItems();
+          updateLogStats();
+        };
+      });
+    </script>
   </body>
 </html>

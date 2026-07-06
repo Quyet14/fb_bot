@@ -11,10 +11,32 @@ async function fetchJson(url, options = {}) {
   const candidates = API_BASE_CANDIDATES.map(base => makeApiUrl(url, base));
   let lastError = null;
 
+  // Đính kèm Authorization header nếu có token
+  const authHeaders = (typeof Auth !== 'undefined') ? Auth.getAuthHeaders() : {};
+  options.headers = { ...authHeaders, ...options.headers };
+
   for (const candidate of candidates) {
     try {
       const res = await fetch(candidate, options);
       if (res.status === 204) return null;
+      // Nếu 401 → token hết hạn, thử silent refresh rồi retry
+      if (res.status === 401 && typeof Auth !== 'undefined') {
+        const refreshed = await Auth.refreshAccessToken();
+        if (refreshed) {
+          options.headers = { ...Auth.getAuthHeaders(), ...options.headers };
+          const retry = await fetch(candidate, options);
+          if (retry.status === 204) return null;
+          if (!retry.ok) {
+            const text = await retry.text();
+            throw new Error(`API error ${retry.status}: ${text}`);
+          }
+          return retry.json();
+        }
+        // Refresh thất bại → redirect login
+        Auth.clearTokens();
+        Auth._redirectToLogin();
+        return null;
+      }
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`API error ${res.status}: ${text}`);
@@ -173,4 +195,26 @@ async function saveSettingsApi(payload) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
+}
+
+async function loadLanguage() {
+  try {
+    const s = await loadSettings();
+    return s?.ngon_ngu || 'vi';
+  } catch (_) { return 'vi'; }
+}
+
+async function saveLanguage(lang) {
+  return saveSettingsApi({ ngon_ngu: lang });
+}
+
+async function loadLanguage() {
+  try {
+    const s = await loadSettings();
+    return s?.ngon_ngu || 'vi';
+  } catch (_) { return 'vi'; }
+}
+
+async function saveLanguage(lang) {
+  return saveSettingsApi({ ngon_ngu: lang });
 }

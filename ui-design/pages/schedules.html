@@ -1,190 +1,375 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quản lý lịch · FB Bot</title>
+    <title>Quản lý lịch · FB Bot Console</title>
     <script>
       (function () {
         try {
-          if (localStorage.getItem('fbbot-theme') === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
-          }
-        } catch (error) {}
+          var t = localStorage.getItem('fbbot-theme');
+          document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+        } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="../html/styles.css?v=2" />
-    <script src="../html/theme.js?v=2" defer></script>
-    <script src="../html/api.js?v=4" defer></script>
-    <script src="../html/app.js?v=4" defer></script>
+    <link rel="stylesheet" href="../html/css/tokens.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/base.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/components.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/responsive.css?v=202607061201" />
+    <style>
+      /* ── Schedule type tab bar ── */
+      .type-tabs {
+        display: flex; gap: 6px; margin-bottom: 20px;
+        background: var(--surface-2); border-radius: var(--radius-pill);
+        padding: 4px; width: fit-content;
+        border: 1px solid var(--border-soft);
+      }
+      .type-tab {
+        padding: 8px 18px; border-radius: var(--radius-pill);
+        font-size: 13px; font-weight: 600;
+        border: none; background: transparent; color: var(--text-muted);
+        cursor: pointer; transition: all .2s var(--ease);
+        display: flex; align-items: center; gap: 6px;
+      }
+      .type-tab.active {
+        background: var(--glass);
+        color: var(--text);
+        box-shadow: 0 2px 10px -4px rgba(0,0,0,0.3);
+        border: 1px solid var(--glass-border);
+      }
+      .type-tab:hover:not(.active) { color: var(--text); background: var(--surface); }
+
+      /* ── Form card ── */
+      .form-card {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        padding: 22px 24px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow);
+        animation: surfaceIn 0.4s var(--ease) backwards;
+      }
+      .form-card-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 18px; flex-wrap: wrap; gap: 12px;
+      }
+      .form-card-header h3 { margin: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+      /* ── Stat bar ── */
+      .page-stat-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+      .mini-stat {
+        background: var(--glass); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border); border-radius: var(--radius-sm);
+        padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+        box-shadow: var(--shadow); animation: surfaceIn 0.35s var(--ease) backwards;
+      }
+      .mini-stat:nth-child(1){animation-delay:.02s}.mini-stat:nth-child(2){animation-delay:.06s}.mini-stat:nth-child(3){animation-delay:.10s}
+      .mini-stat-icon { width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:var(--accent-soft);box-shadow:inset 0 1px 1px var(--glass-rim); }
+      .mini-stat-body .val { font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--text); }
+      .mini-stat-body .lbl { font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700; }
+
+      /* ── Panel card ── */
+      .panel-card {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        overflow: hidden; box-shadow: var(--shadow);
+        animation: surfaceIn 0.45s var(--ease) backwards;
+        animation-delay: 0.1s;
+      }
+      .panel-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px 14px; border-bottom: 1px solid var(--border-soft);
+        background: linear-gradient(90deg, var(--bg-soft), transparent);
+      }
+      .panel-head h3 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+      /* ── Modal ── */
+      .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); z-index:5000; align-items:center; justify-content:center; }
+      .modal-overlay.open { display:flex; }
+      .modal-box { background:var(--glass-strong); backdrop-filter:blur(var(--blur-lg)); -webkit-backdrop-filter:blur(var(--blur-lg)); border:1px solid var(--glass-border); border-radius:var(--radius); padding:28px 28px 24px; width:520px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:0 24px 60px rgba(0,0,0,.5); animation:modalIn .25s cubic-bezier(.34,1.56,.64,1); }
+      @keyframes modalIn { from{opacity:0;transform:scale(.92) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+      .modal-box h3 { margin:0 0 20px; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; }
+      .modal-actions { display:flex; gap:10px; margin-top:20px; justify-content:flex-end; }
+    </style>
   </head>
   <body class="page-schedules">
-    <div class="app">
-      <aside class="sidebar">
 
-        <nav>
-          <a href="../html/index.html" class="nav-dashboard">
-            <span class="nav-icon">🏠</span><span class="nav-label"> Dashboard</span>
-          </a>
-          <a href="groups.html" class="nav-groups">
-            <span class="nav-icon">👥</span><span class="nav-label"> Nhóm</span>
-          </a>
-          <a href="topics.html" class="nav-topics">
-            <span class="nav-icon">🏷️</span><span class="nav-label"> Chủ đề</span>
-          </a>
-          <a href="schedules.html" class="nav-schedules active">
-            <span class="nav-icon">📅</span><span class="nav-label"> Lịch đăng</span>
-          </a>
-          <a href="logs.html" class="nav-logs">
-            <span class="nav-icon">📋</span><span class="nav-label"> Logs</span>
-          </a>
-        </nav>
-      </aside>
+    <!-- ══ GLOBAL BAR ══ -->
+    <header class="global-bar">
+      <div class="global-bar-left">
+        <a href="../html/dashboard.html" class="global-bar-logo">
+          <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
+          <span class="global-bar-logo-text">FB Bot Console</span>
+        </a>
+        <div class="global-bar-sep"></div>
+        <div class="global-status-dot">
+          <span class="dot dot-success"></span>
+          <span class="global-status-label" data-i18n="bar.online">Online</span>
+        </div>
+      </div>
+      <div class="global-bar-right">
+        <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
+        <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+      </div>
+    </header>
+
+    <div class="app">
+      <div class="sidebar-wrapper" id="sidebarWrapper">
+        <aside class="sidebar" id="sidebar">
+          <nav>
+            <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
+            <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+            <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ đề</span></a>
+            <a href="schedules.html" class="nav-schedules active"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch đăng</span></a>
+            <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+          </nav>
+          <div class="sidebar-status">
+            <span class="dot dot-success"></span>
+            <div class="sidebar-status-text">
+              <span class="label" data-i18n="common.bot_running">Bot đang chạy</span>
+              <span class="sub" data-i18n="common.version">v1.0.0 · API online</span>
+            </div>
+          </div>
+        </aside>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Thu gọn">
+          <svg viewBox="0 0 7 12"><polyline points="5,1 1,6 5,11"/></svg>
+        </button>
+      </div>
+
       <main class="main">
         <header class="topbar">
           <div>
-            <h2>Quản lý lịch</h2>
-            <p class="sub">Tạo và theo dõi lịch đăng bài, repost, tương tác theo thứ và giờ.</p>
+            <span class="eyebrow"><span class="dot"></span data-i18n="sched.eyebrow"> Tự động hoá</span>
+            <h2 data-i18n="sched.title">Quản lý lịch</h2>
+            <p class="sub" data-i18n="sched.sub">Tạo và theo dõi lịch đăng bài, repost, tương tác theo thứ và giờ.</p>
+          </div>
+          <div class="topbar-hero-shapes" aria-hidden="true">
+            <div class="hero-shape">📅</div>
+            <div class="hero-shape">🔁</div>
+            <div class="hero-shape">💬</div>
           </div>
         </header>
 
+        <!-- Stats -->
+        <div class="page-stat-bar">
+          <div class="mini-stat">
+            <div class="mini-stat-icon">📝</div>
+            <div class="mini-stat-body"><div class="val" id="postSchedCount">—</div><div class="lbl" data-i18n="sched.post">Lịch đăng bài</div></div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-icon">🔁</div>
+            <div class="mini-stat-body"><div class="val" id="repostSchedCount">—</div><div class="lbl" data-i18n="sched.repost">Lịch repost</div></div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-icon">💬</div>
+            <div class="mini-stat-body"><div class="val" id="interactSchedCount">—</div><div class="lbl" data-i18n="sched.interact">Lịch tương tác</div></div>
+          </div>
+        </div>
+
         <div id="status" style="margin-bottom:16px;"></div>
 
-        <form id="scheduleForm" class="card schedule-form">
-          <div class="field-grid">
-            <label class="field">
-              <span>Loại lịch</span>
-              <select id="scheduleType">
-                <option value="dang-bai">Đăng bài</option>
-                <option value="repost">Repost</option>
-                <option value="tuong-tac">Tương tác</option>
-              </select>
-            </label>
-            <label class="field">
-              <span>Thứ</span>
-              <input id="scheduleThu" placeholder="Thứ 2, Thứ 3..." required />
-            </label>
-            <label class="field">
-              <span>Giờ</span>
-              <input id="scheduleGio" placeholder="08:00" required />
-            </label>
-          </div>
-
-          <div id="schedulePostFields" class="field-grid field-grid-2">
-            <label class="field">
-              <span>Chọn kiểu đăng</span>
-              <select id="scheduleDangBaiMode">
-                <option value="topic" selected>Theo chủ đề</option>
-                <option value="content">Theo nội dung người dùng</option>
-              </select>
-            </label>
-
-            <label class="field" id="scheduleTopicField">
-              <span>Chủ đề</span>
-              <select id="scheduleTopicId"></select>
-            </label>
-
-            <label class="field field-full" id="scheduleContentTextField" style="display:none;">
-              <span>Nội dung bài đăng</span>
-              <textarea id="scheduleContentText" rows="4" placeholder="Nhập nội dung bạn muốn đăng lên nhóm..."></textarea>
-            </label>
-
-            <label class="field field-full">
-              <span>Nhóm ID (phân cách bằng dấu phẩy)</span>
-              <input id="scheduleGroupIds" placeholder="1,2,3" />
-            </label>
-
-            <div class="field field-full checkbox-row">
-              <label class="checkbox-inline" id="scheduleGiuNguyenGocField" style="display:none;">
-                <input id="scheduleGiuNguyenGoc" type="checkbox" checked />
-                <span>Giữ nguyên gốc</span>
-              </label>
-              <label class="checkbox-inline">
-                <input id="scheduleDangKemAnh" type="checkbox" />
-                <span>Đính kèm ảnh</span>
-              </label>
+        <!-- Form create -->
+        <div class="form-card">
+          <div class="form-card-header">
+            <h3><span>➕</span> Tạo lịch mới</h3>
+            <!-- Tabs loại lịch -->
+            <div class="type-tabs" role="tablist">
+              <button class="type-tab active" role="tab" data-type="dang-bai" onclick="switchTab('dang-bai', this)">📝 Đăng bài</button>
+              <button class="type-tab" role="tab" data-type="repost" onclick="switchTab('repost', this)">🔁 Repost</button>
+              <button class="type-tab" role="tab" data-type="tuong-tac" onclick="switchTab('tuong-tac', this)">💬 Tương tác</button>
             </div>
           </div>
 
+          <form id="scheduleForm" class="schedule-form">
+            <input type="hidden" id="scheduleType" value="dang-bai" />
 
-          <div id="scheduleRepostFields" class="field-grid" style="display:none;">
-            <label class="field">
-              <span>Số bài</span>
-              <input id="scheduleSoBai" type="number" min="1" value="1" />
-            </label>
-            <label class="field">
-              <span>Nhóm nguồn ID</span>
-              <input id="scheduleNhomNguonIds" placeholder="1,2" />
-            </label>
-            <label class="field">
-              <span>Nhóm đích ID</span>
-              <input id="scheduleNhomDichIds" placeholder="3,4" />
-            </label>
-          </div>
+            <!-- Time row (chung) -->
+            <div class="field-grid field-grid-2" style="margin-bottom:14px;">
+              <label class="field">
+                <span>Thứ trong tuần</span>
+                <input id="scheduleThu" placeholder="Thứ 2, Thứ 3, Chủ nhật..." required />
+              </label>
+              <label class="field">
+                <span>Giờ chạy</span>
+                <input id="scheduleGio" placeholder="08:00" required />
+              </label>
+            </div>
 
-          <div id="scheduleInteractFields" class="field-grid" style="display:none;">
-            <label class="field">
-              <span>Nhóm ID</span>
-              <input id="scheduleGroupIdsInteract" placeholder="1,2,3" />
-            </label>
-          </div>
+            <!-- Đăng bài fields -->
+            <div id="schedulePostFields">
+              <div class="field-grid field-grid-2" style="margin-bottom:14px;">
+                <label class="field">
+                  <span>Kiểu đăng</span>
+                  <select id="scheduleDangBaiMode">
+                    <option value="topic" selected>🏷️ Theo chủ đề (AI viết)</option>
+                    <option value="content">📝 Nội dung tự soạn</option>
+                  </select>
+                </label>
+                <label class="field" id="scheduleTopicField">
+                  <span>Chủ đề</span>
+                  <select id="scheduleTopicId"></select>
+                </label>
+              </div>
+              <div class="field field-full" id="scheduleContentTextField" style="display:none;margin-bottom:14px;">
+                <span>Nội dung bài đăng</span>
+                <textarea id="scheduleContentText" rows="4" placeholder="Nhập nội dung bạn muốn đăng..."></textarea>
+              </div>
+              <div class="field-grid" style="margin-bottom:14px;">
+                <label class="field field-full">
+                  <span>Nhóm đăng (ID, phân cách bằng dấu phẩy)</span>
+                  <input id="scheduleGroupIds" placeholder="1, 2, 3" />
+                </label>
+              </div>
+              <div class="checkbox-row" style="margin-bottom:4px;">
+                <label class="checkbox-inline" id="scheduleGiuNguyenGocField" style="display:none;">
+                  <input id="scheduleGiuNguyenGoc" type="checkbox" checked />
+                  <span>Giữ nguyên gốc</span>
+                </label>
+                <label class="checkbox-inline">
+                  <input id="scheduleDangKemAnh" type="checkbox" />
+                  <span>Đính kèm ảnh</span>
+                </label>
+              </div>
+            </div>
 
-          <button type="submit" class="btn btn-primary" style="justify-self:start;">+ Tạo lịch mới</button>
-        </form>
+            <!-- Repost fields -->
+            <div id="scheduleRepostFields" style="display:none;">
+              <div class="field-grid" style="margin-bottom:14px;">
+                <label class="field"><span>Số bài repost</span><input id="scheduleSoBai" type="number" min="1" value="1" /></label>
+                <label class="field"><span>Nhóm nguồn (ID)</span><input id="scheduleNhomNguonIds" placeholder="1, 2" /></label>
+                <label class="field"><span>Nhóm đích (ID)</span><input id="scheduleNhomDichIds" placeholder="3, 4" /></label>
+              </div>
+            </div>
 
+            <!-- Tương tác fields -->
+            <div id="scheduleInteractFields" style="display:none; margin-bottom:14px;">
+              <label class="field">
+                <span>Nhóm tương tác (ID)</span>
+                <input id="scheduleGroupIdsInteract" placeholder="1, 2, 3" />
+              </label>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+              <button type="submit" class="btn btn-primary" data-i18n="sched.submit">✓ Tạo lịch</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Danh sách lịch -->
         <div id="schedulesRoot" class="grid"></div>
       </main>
     </div>
 
     <!-- Modal Sửa lịch đăng bài -->
-    <div id="editPostModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
-      <div style="background:var(--bg-card); border-radius:12px; padding:28px; width:480px; max-width:95vw; max-height:90vh; overflow-y:auto;">
-        <h3 style="margin:0 0 20px;">Sửa lịch đăng bài</h3>
+    <div id="editPostModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3><span>✏️</span> Sửa lịch đăng bài</h3>
         <div class="field-grid field-grid-2">
-          <label class="field">
-            <span>Thứ</span>
-            <input id="editThu" placeholder="Thứ 7" />
+          <label class="field"><span>Thứ</span><input id="editThu" placeholder="Thứ 7" /></label>
+          <label class="field"><span>Giờ</span><input id="editGio" placeholder="17:00" /></label>
+          <label class="field"><span>Kiểu đăng</span>
+            <select id="editMode"><option value="topic">Theo chủ đề</option><option value="content">Theo nội dung</option></select>
           </label>
-          <label class="field">
-            <span>Giờ</span>
-            <input id="editGio" placeholder="17:00" />
-          </label>
-          <label class="field">
-            <span>Kiểu đăng</span>
-            <select id="editMode">
-              <option value="topic">Theo chủ đề</option>
-              <option value="content">Theo nội dung người dùng</option>
-            </select>
-          </label>
-          <label class="field" id="editTopicField">
-            <span>Chủ đề</span>
-            <select id="editTopicId"></select>
-          </label>
+          <label class="field" id="editTopicField"><span>Chủ đề</span><select id="editTopicId"></select></label>
           <label class="field field-full" id="editContentField" style="display:none;">
-            <span>Nội dung bài đăng</span>
-            <textarea id="editContentText" rows="4"></textarea>
+            <span>Nội dung bài đăng</span><textarea id="editContentText" rows="4"></textarea>
           </label>
           <label class="field field-full">
-            <span>Nhóm ID (phân cách bằng dấu phẩy)</span>
-            <input id="editGroupIds" placeholder="1,2,3" />
+            <span>Nhóm ID (phân cách bằng dấu phẩy)</span><input id="editGroupIds" placeholder="1,2,3" />
           </label>
           <div class="field field-full checkbox-row">
             <label class="checkbox-inline" id="editGiuNguyenField" style="display:none;">
-              <input id="editGiuNguyen" type="checkbox" checked />
-              <span>Giữ nguyên gốc</span>
+              <input id="editGiuNguyen" type="checkbox" checked /><span>Giữ nguyên gốc</span>
             </label>
             <label class="checkbox-inline">
-              <input id="editDangKemAnh" type="checkbox" />
-              <span>Đính kèm ảnh</span>
+              <input id="editDangKemAnh" type="checkbox" /><span>Đính kèm ảnh</span>
             </label>
           </div>
         </div>
-        <div style="display:flex; gap:12px; margin-top:20px; justify-content:flex-end;">
-          <button class="btn btn-secondary" onclick="closeEditModal()">Hủy</button>
-          <button class="btn btn-primary" onclick="submitEditPost()">Lưu</button>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeEditModal()">Hủy</button>
+          <button class="btn btn-primary" onclick="submitEditPost()">💾 Lưu</button>
         </div>
       </div>
     </div>
+
     <div id="toastContainer" class="toast-container"></div>
+
+    <script src="../html/theme.js" defer></script>
+    <script src="../html/i18n.js" defer></script>
+    <script src="../html/api.js" defer></script>
+    <script src="../html/app.js" defer></script>
+    <script src="../html/script.js" defer></script>
+    <script>
+      // Sidebar collapse
+      const sw = document.getElementById('sidebarWrapper'), sb = document.getElementById('sidebar'), st = document.getElementById('sidebarToggle');
+      function applyCollapsed(c) {
+        sw?.classList.toggle('collapsed',c); sb?.classList.toggle('collapsed',c);
+        const p = st?.querySelector('polyline'); if(p) p.setAttribute('points', c ? '1,1 5,6 1,11' : '5,1 1,6 5,11');
+        localStorage.setItem('fbbot-sidebar', c?'1':'0');
+      }
+      applyCollapsed(localStorage.getItem('fbbot-sidebar')==='1');
+      st?.addEventListener('click', () => applyCollapsed(!sw?.classList.contains('collapsed')));
+
+      // Theme
+      function syncThemeBtns() {
+        const light = document.documentElement.getAttribute('data-theme')==='light';
+        const sb2 = document.getElementById('sidebarThemeBtn'); if(sb2) sb2.querySelector('.icon').textContent = light?'🌙':'☀️';
+        const tb = document.getElementById('themeBtn'); if(tb) tb.textContent = light?'☀️':'🌙';
+      }
+      document.getElementById('themeBtn')?.addEventListener('click', ()=>{ window.toggleTheme?.(); syncThemeBtns(); });
+      document.getElementById('sidebarThemeBtn')?.addEventListener('click', ()=>{ window.toggleTheme?.(); syncThemeBtns(); });
+      document.addEventListener('DOMContentLoaded', syncThemeBtns);
+
+      // Modal helpers
+      document.addEventListener('DOMContentLoaded', () => {
+        // Fix modal open/close using class
+        const origOpen = window.openEditPostModal; // do nothing — modal uses open class now
+        // patch closeEditModal
+      });
+
+      // Tab switch — sync with hidden input so app.js logic still works
+      function switchTab(type, el) {
+        document.getElementById('scheduleType').value = type;
+        document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        window.updateScheduleFormFields?.();
+      }
+
+      // Patch editPostModal display to use class
+      document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('editPostModal');
+        const orig = window.openEditPostModal;
+        window.openEditPostModal = function(schedule) {
+          orig?.(schedule);
+          modal?.classList.add('open');
+          modal?.removeAttribute('style'); // clear old inline display:flex
+          modal.style.display = ''; // reset so .open CSS takes over
+        };
+        const origClose = window.closeEditModal;
+        window.closeEditModal = function() {
+          origClose?.();
+          modal?.classList.remove('open');
+        };
+      });
+
+      // Schedule stats
+      function updateScheduleStats() {
+        const s = window.state?.schedules;
+        document.getElementById('postSchedCount').textContent = s?.posts?.length ?? '—';
+        document.getElementById('repostSchedCount').textContent = s?.reposts?.length ?? '—';
+        document.getElementById('interactSchedCount').textContent = s?.interacts?.length ?? '—';
+      }
+      document.addEventListener('DOMContentLoaded', () => {
+        const orig = window.renderSchedules;
+        window.renderSchedules = function() { orig?.(); updateScheduleStats(); };
+      });
+    </script>
   </body>
 </html>

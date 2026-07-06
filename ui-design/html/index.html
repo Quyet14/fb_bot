@@ -1,176 +1,228 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FB Bot · Dashboard</title>
-    <script>
-      (function () {
-        try {
-          if (localStorage.getItem('fbbot-theme') === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
-          }
-        } catch (error) {}
-      })();
-    </script>
-    <link rel="stylesheet" href="/html/styles.css?v=5" />
-  </head>
-  <body class="page-dashboard">
-    <div class="app">
-      <aside class="sidebar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FB Bot Console — Tự động hoá Fanpage &amp; Nhóm Facebook</title>
+  <link rel="stylesheet" href="/html/styles.css" />
+</head>
+<body class="page-landing">
 
-        <nav>
-          <a href="index.html" class="nav-dashboard active">
-            <span class="nav-icon">🏠</span><span class="nav-label"> Dashboard</span>
-          </a>
-          <a href="../pages/groups.html" class="nav-groups">
-            <span class="nav-icon">👥</span><span class="nav-label"> Nhóm</span>
-          </a>
-          <a href="../pages/topics.html" class="nav-topics">
-            <span class="nav-icon">🏷️</span><span class="nav-label"> Chủ đề</span>
-          </a>
-          <a href="../pages/schedules.html" class="nav-schedules">
-            <span class="nav-icon">📅</span><span class="nav-label"> Lịch đăng</span>
-          </a>
-          <a href="../pages/logs.html" class="nav-logs">
-            <span class="nav-icon">📋</span><span class="nav-label"> Logs</span>
-          </a>
-        </nav>
-      </aside>
+  <!-- ============ HEADER ============ -->
+  <header class="nav">
+    <a href="#" class="nav-brand">
+      <span class="nav-brand-mark">🤖</span>
+      FB Bot Console
+    </a>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="#features">Tính năng</a></li>
+        <li><a href="#how-it-works">Cách hoạt động</a></li>
+        <li><a href="#trust">Bảo mật</a></li>
+        <li><a href="#footer">Liên hệ</a></li>
+      </ul>
+    </nav>
+    <div class="nav-actions">
+      <a href="login.html" class="btn btn-ghost">Đăng nhập</a>
+      <a href="dashboard.html" class="btn btn-primary">Vào Dashboard</a>
+    </div>
+    <button class="nav-toggle" aria-label="Mở menu">☰</button>
+  </header>
 
-      <main class="main">
-        <header class="topbar">
-          <div>
-            <h2>Bảng điều khiển</h2>
-            <p class="sub">Tổng quan hoạt động bot · <span id="currentTime" style="font-family:var(--font-mono);font-size:12px;color:var(--text-faint);"></span></p>
-          </div>
-          <div style="display:flex;gap:10px;align-items:center;">
-            <button type="button" class="btn btn-primary" onclick="window.location.href='../pages/schedules.html?mode=create'">+ Tạo lịch mới</button>
-          </div>
-        </header>
-
-        <div id="status" style="margin-bottom:12px;"></div>
-
-        <!-- Stats row -->
-        <section class="cards" style="margin-bottom:22px;">
-          <div class="card stat-card">
-            <div class="stat-icon" style="background:var(--c-groups-soft);color:var(--c-groups);">👥</div>
-            <div class="stat-body">
-              <p>Tổng nhóm</p>
-              <h3 id="dashboardGroupCount">—</h3>
-            </div>
-          </div>
-          <div class="card stat-card">
-            <div class="stat-icon" style="background:var(--c-schedules-soft);color:var(--c-schedules);">📅</div>
-            <div class="stat-body">
-              <p>Lịch hoạt động</p>
-              <h3 id="dashboardScheduleCount">—</h3>
-            </div>
-          </div>
-          <div class="card stat-card">
-            <div class="stat-icon" style="background:var(--c-dashboard-soft);color:var(--c-dashboard);">⚡</div>
-            <div class="stat-body">
-              <p>Hoạt động hôm nay</p>
-              <h3 id="dashboardTodayCount">—</h3>
-            </div>
-          </div>
-          <div class="card stat-card">
-            <div class="stat-icon" style="background:var(--c-logs-soft);color:var(--c-logs);">❌</div>
-            <div class="stat-body">
-              <p>Lỗi hôm nay</p>
-              <h3 id="dashboardErrorCount">—</h3>
-            </div>
-          </div>
-        </section>
-
-        <!-- Main content: 2 cols -->
-        <div class="dashboard-grid">
-
-          <!-- Recent activity -->
-          <div class="panel dashboard-panel">
-            <div class="panel-header">
-              <h3>Hoạt động gần đây</h3>
-              <a href="../pages/logs.html" class="panel-link">Xem tất cả →</a>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Thời gian</th>
-                  <th>Loại</th>
-                  <th>Trạng thái</th>
-                  <th>Chi tiết</th>
-                </tr>
-              </thead>
-              <tbody id="dashboardRecentLogs">
-                <tr><td colspan="4" style="text-align:center;color:var(--text-faint);padding:20px;">Đang tải...</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Right column -->
-          <div style="display:flex;flex-direction:column;gap:18px;">
-
-            <!-- Upcoming schedules -->
-            <div class="panel dashboard-panel">
-              <div class="panel-header">
-                <h3>Lịch sắp tới</h3>
-                <a href="../pages/schedules.html" class="panel-link">Quản lý →</a>
-              </div>
-              <div id="dashboardUpcoming" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
-                <div style="text-align:center;color:var(--text-faint);font-size:13px;padding:16px;">Đang tải...</div>
-              </div>
-            </div>
-
-            <!-- Quick actions -->
-            <div class="panel dashboard-panel">
-              <div class="panel-header">
-                <h3>Thao tác nhanh</h3>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-                <a href="../pages/groups.html" class="quick-action-btn">
-                  <span style="font-size:20px;">👥</span>
-                  <span>Thêm nhóm</span>
-                </a>
-                <a href="../pages/topics.html" class="quick-action-btn">
-                  <span style="font-size:20px;">🏷️</span>
-                  <span>Thêm chủ đề</span>
-                </a>
-                <a href="../pages/schedules.html?mode=create" class="quick-action-btn">
-                  <span style="font-size:20px;">📅</span>
-                  <span>Tạo lịch</span>
-                </a>
-              </div>
-            </div>
-
-          </div>
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-bg-glow"></div>
+    <div class="hero-inner">
+      <div>
+        <span class="eyebrow"><span class="dot"></span> Tự động hoá mạng xã hội</span>
+        <h1>Quản lý Fanpage &amp; Nhóm Facebook, <span class="highlight">không cần ngồi máy cả ngày</span></h1>
+        <p class="lead">
+          Lên lịch đăng bài, để AI viết nội dung, tự động repost và tương tác an toàn —
+          tất cả điều khiển từ một bảng điều khiển duy nhất, theo dõi real-time.
+        </p>
+        <div class="hero-actions">
+          <a href="register.html" class="btn btn-primary btn-lg">Bắt đầu miễn phí →</a>
+          <a href="#how-it-works" class="btn btn-ghost btn-lg">Xem cách hoạt động</a>
         </div>
-      </main>
-    </div>
-    <!-- Notification panel -->
-    <div id="notifPanel" class="notif-panel" style="display:none;">
-      <div class="notif-panel-header">
-        <h4>Thông báo</h4>
-        <button onclick="clearNotifications()" class="notif-clear-btn">Xóa tất cả</button>
+        <div class="hero-trust">
+          <span class="stars">★★★★★</span>
+          Được tin dùng bởi các chủ shop &amp; quản trị viên nhóm cộng đồng
+        </div>
       </div>
-      <div id="notifList" class="notif-list">
-        <div class="notif-empty">Chưa có thông báo nào</div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="hero-visual-core">🗓️</div>
+        <div class="glass-chip chip-1">🤖</div>
+        <div class="glass-chip chip-2">💬</div>
+        <div class="glass-chip chip-3">📊</div>
+        <div class="glass-chip chip-4">🔁</div>
+        <div class="glass-chip chip-5">✨</div>
       </div>
     </div>
 
-    <!-- Toast container -->
-    <div id="toastContainer" class="toast-container"></div>
+    <!-- Stat strip -->
+    <div class="stat-strip">
+      <div class="stat-item">
+        <div class="num">1.240+</div>
+        <div class="label">Bài đăng tự động mỗi tháng</div>
+      </div>
+      <div class="stat-item">
+        <div class="num">98,4%</div>
+        <div class="label">Tỷ lệ đăng bài thành công</div>
+      </div>
+      <div class="stat-item">
+        <div class="num">36</div>
+        <div class="label">Nhóm &amp; Fanpage đang quản lý</div>
+      </div>
+      <div class="stat-item">
+        <div class="num">~12h</div>
+        <div class="label">Thời gian tiết kiệm mỗi tuần</div>
+      </div>
+    </div>
+  </section>
 
-    <script src="/html/theme.js?v=5"></script>
-    <script src="/html/api.js?v=5"></script>
-    <script src="/html/app.js?v=5"></script>
-    <script>
-      // Clock
-      function updateClock() {
-        const el = document.getElementById('currentTime');
-        if (el) el.textContent = new Date().toLocaleString('vi-VN');
-      }
-      updateClock();
-      setInterval(updateClock, 1000);
-    </script>
-  </body>
+  <!-- ============ FEATURES ============ -->
+  <section class="section" id="features">
+    <div class="section-inner">
+      <div class="section-head">
+        <span class="eyebrow"><span class="dot"></span> Tính năng</span>
+        <h2>Mọi thứ bạn cần để vận hành mạng xã hội tự động</h2>
+        <p>Từ viết nội dung đến đăng bài, theo dõi kết quả — tất cả trong một bảng điều khiển gọn gàng.</p>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">✍️</div>
+          <h3>AI viết nội dung</h3>
+          <p>Chỉ cần chọn chủ đề, AI tự viết bài đăng tự nhiên, đúng giọng văn cộng đồng bạn muốn.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🗓️</div>
+          <h3>Lên lịch linh hoạt</h3>
+          <p>Đặt lịch theo thứ và giờ cụ thể cho từng nhóm — đăng bài, repost hay tương tác đều tự động chạy đúng giờ.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔁</div>
+          <h3>Repost thông minh</h3>
+          <p>Lấy nội dung từ nhóm nguồn, viết lại bằng AI và đăng sang nhóm đích — không đăng trùng lặp máy móc.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h3>Tương tác có kiểm soát</h3>
+          <p>Tự động like/comment trong giới hạn an toàn bạn tự đặt ra — tránh spam, giữ tài khoản ổn định.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Log theo dõi real-time</h3>
+          <p>Mọi hoạt động của bot đều được ghi lại — biết ngay lịch nào chạy thành công, lịch nào gặp lỗi.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚙️</div>
+          <h3>Cấu hình theo ý bạn</h3>
+          <p>Chỉnh giới hạn like/comment, thời gian chờ giữa các nhóm... mọi thứ đều điều khiển được từ dashboard.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="section" id="how-it-works" style="padding-top: 0;">
+    <div class="section-inner">
+      <div class="section-head">
+        <span class="eyebrow"><span class="dot"></span> Cách hoạt động</span>
+        <h2>Chỉ 3 bước để bắt đầu</h2>
+        <p>Không cần biết code, không cần cắm máy theo dõi cả ngày.</p>
+      </div>
+
+      <div class="steps">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h3>Kết nối nhóm &amp; chủ đề</h3>
+          <p>Thêm các nhóm Facebook bạn quản lý và những chủ đề nội dung muốn bot khai thác.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h3>Thiết lập lịch chạy</h3>
+          <p>Chọn thứ, giờ và loại tác vụ (đăng bài / repost / tương tác) cho từng nhóm.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h3>Bot tự vận hành</h3>
+          <p>Theo dõi mọi thứ qua dashboard — bật/tắt, chạy thử ngay, hoặc để bot tự chạy theo lịch.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRUST / SAFETY ============ -->
+  <section class="section" id="trust" style="padding-top: 0;">
+    <div class="section-inner">
+      <div class="trust-panel">
+        <div>
+          <span class="eyebrow"><span class="dot"></span> An toàn &amp; kiểm soát</span>
+          <h2 style="font-size: 26px; margin-bottom: 14px;">Bạn luôn là người quyết định cuối cùng</h2>
+          <p style="color: var(--ink-muted); font-size: 14.5px; line-height: 1.65;">
+            FB Bot Console không tự ý làm gì ngoài phạm vi bạn thiết lập. Mọi giới hạn tần suất,
+            số lượng nhóm và nội dung đều do bạn cấu hình và có thể dừng bất cứ lúc nào.
+          </p>
+          <ul class="trust-list">
+            <li><span class="check">✓</span> Toàn quyền bật/tắt từng lịch chạy riêng lẻ</li>
+            <li><span class="check">✓</span> Giới hạn like/comment để tránh hoạt động bất thường</li>
+            <li><span class="check">✓</span> Log chi tiết mọi lần chạy — minh bạch, dễ kiểm tra lại</li>
+            <li><span class="check">✓</span> Dữ liệu và cấu hình lưu trên hệ thống của riêng bạn</li>
+          </ul>
+        </div>
+        <div class="trust-visual">
+          <div class="row"><span>Trạng thái API</span> <span class="dot"></span></div>
+          <div class="row"><span>Kết nối Database</span> <span class="dot"></span></div>
+          <div class="row"><span>Lịch đang hoạt động</span> <span>12</span></div>
+          <div class="row"><span>Lỗi hôm nay</span> <span>0</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA ============ -->
+  <section class="section" style="padding-top: 0;">
+    <div class="cta-banner">
+      <h2>Sẵn sàng tự động hoá nhóm Facebook của bạn?</h2>
+      <p>Thiết lập trong vài phút, theo dõi mọi lúc qua dashboard.</p>
+      <div class="hero-actions">
+        <a href="dashboard.html" class="btn btn-dark btn-lg">Vào Dashboard →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer" id="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a href="#" class="nav-brand">
+          <span class="nav-brand-mark">🤖</span>
+          FB Bot Console
+        </a>
+        <p>Bảng điều khiển tự động hoá đăng bài, repost và tương tác cho nhóm &amp; fanpage Facebook.</p>
+      </div>
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h4>Sản phẩm</h4>
+          <a href="#features">Tính năng</a>
+          <a href="#how-it-works">Cách hoạt động</a>
+          <a href="#trust">Bảo mật</a>
+        </div>
+        <div class="footer-col">
+          <h4>Truy cập</h4>
+          <a href="#">Dashboard</a>
+          <a href="login.html">Đăng nhập</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 FB Bot Console. Vui lòng sử dụng đúng chính sách của Facebook khi vận hành.</span>
+      <span>Được xây dựng để bạn kiểm soát, không thay bạn quyết định.</span>
+    </div>
+  </footer>
+
+  <script src="/html/script.js"></script>
+</body>
 </html>

@@ -10,6 +10,7 @@ from app.database import Base, engine
 from app.config import settings
 from app.scheduler import scheduler, nap_lai_toan_bo_lich
 from app.routers import groups, topics, schedules, actions, logs, setting as settings_router, user_contents as user_contents_router
+from app.routers.auth import router as auth_router
 
 
 if settings.USE_MONGODB:
@@ -29,6 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(groups.router)
 app.include_router(topics.router)
 app.include_router(schedules.router)
