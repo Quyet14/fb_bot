@@ -12,10 +12,10 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="../html/css/tokens.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/base.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/components.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/responsive.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/tokens.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/base.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/components.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/responsive.css?v=202507080001" />
     <style>
       /* ── Log list ── */
       .log-filters {
@@ -44,32 +44,92 @@
       .log-search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
       .log-search::placeholder { color: var(--text-faint); }
 
-      /* ── Log items ── */
-      .log-list { display: flex; flex-direction: column; gap: 6px; padding: 14px; }
+      /* View toggle (reuse from components) */
+      .view-toggle { display: flex; gap: 4px; }
+      .view-btn {
+        padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+        border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted);
+        cursor: pointer; transition: all .15s;
+      }
+      .view-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+      /* ── Log items — Card view ── */
+      .log-list { display: flex; flex-direction: column; gap: 4px; padding: 12px; }
 
       .log-item {
-        display: grid;
-        grid-template-columns: 140px 110px 110px 1fr auto;
+        display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
+        gap: 10px;
+        padding: 9px 14px 9px 16px;
         border: 1px solid var(--border-soft);
         background: var(--bg);
         border-radius: var(--radius-sm);
-        transition: border-color .15s, background .15s, transform .15s var(--ease);
+        transition: border-color .15s, background .15s, box-shadow .15s;
         animation: surfaceIn 0.3s var(--ease) backwards;
+        position: relative;
+        overflow: hidden;
       }
-      .log-item:hover { background: var(--surface); border-color: var(--border); transform: translateX(3px); }
-      .log-item.success { border-left: 3px solid var(--success); }
-      .log-item.error   { border-left: 3px solid var(--danger); }
-      .log-item.warning { border-left: 3px solid var(--warning); }
+      .log-item:hover { background: var(--surface); border-color: var(--border); box-shadow: 0 2px 8px -4px rgba(0,0,0,.12); }
 
-      .log-time { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); }
-      .log-type { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
-      .log-status { }
-      .log-detail { font-size: 12.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .log-expand { font-size: 11px; color: var(--text-faint); cursor: pointer; padding: 2px 6px; border-radius: 5px; border: 1px solid var(--border-soft); background: none; transition: all .15s; }
-      .log-expand:hover { border-color: var(--accent); color: var(--accent); }
+      /* Đường kẻ màu bên trái — đặc trưng card view */
+      .log-item::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 3px;
+        border-radius: 3px 0 0 3px;
+        background: var(--border);
+      }
+      .log-item.success::before { background: var(--success); }
+      .log-item.error::before   { background: var(--danger); }
+      .log-item.warning::before { background: var(--warning); }
+
+      .log-time {
+        font-family: var(--font-mono); font-size: 11px; color: var(--text-faint);
+        white-space: nowrap; min-width: 120px; flex-shrink: 0;
+      }
+      .log-type {
+        font-size: 12px; font-weight: 700; color: var(--text-muted);
+        white-space: nowrap; min-width: 90px; flex-shrink: 0;
+      }
+      .log-status { flex-shrink: 0; min-width: 90px; }
+
+      .log-detail {
+        font-size: 12.5px; color: var(--text);
+        flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .log-detail .page-name { font-weight: 600; color: var(--text); }
+      .log-detail .res-ok   { color: var(--success); font-weight: 700; }
+      .log-detail .res-err  { color: var(--danger);  font-weight: 700; }
+      .log-detail .res-pend { color: var(--warning); font-weight: 700; }
+
+      .log-expand {
+        font-size: 11px; color: var(--text-faint); cursor: pointer;
+        padding: 3px 8px; border-radius: 6px;
+        border: 1px solid var(--border-soft); background: none;
+        transition: all .15s; white-space: nowrap; flex-shrink: 0;
+      }
+      .log-expand:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+      /* ── Table view — header + rows thoáng ── */
+      #logsTable thead th {
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 800;
+        color: var(--text-faint);
+        padding: 10px 16px 8px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-soft);
+      }
+      #logsTable tbody td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-soft);
+        font-size: 13px;
+        vertical-align: middle;
+      }
+      #logsTable tbody tr:last-child td { border-bottom: none; }
+      #logsTable tbody tr:hover td { background: var(--surface-2); }
 
       /* ── Stats ── */
       .page-stat-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
@@ -143,8 +203,9 @@
           <nav>
             <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
             <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
-            <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ đề</span></a>
-            <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch đăng</span></a>
+            <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
+            <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
+            <a href="fanpage-schedules.html" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
             <a href="logs.html" class="nav-logs active"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
           </nav>
           <div class="sidebar-status">
@@ -201,6 +262,10 @@
           <div class="panel-head">
             <h3><span>📋</span> Nhật ký hoạt động <span class="live-badge"><span class="dot dot-success"></span> Live</span></h3>
             <div style="display:flex; align-items:center; gap:8px;">
+              <div class="view-toggle">
+                <button class="view-btn active" id="viewCardLogs" onclick="setLogView('card')">⊞ Thẻ</button>
+                <button class="view-btn" id="viewTableLogs" onclick="setLogView('table')">☰ Bảng</button>
+              </div>
               <button class="filter-btn" onclick="refreshLogs()" data-i18n="logs.refresh">🔄 Làm mới</button>
             </div>
           </div>
@@ -211,26 +276,30 @@
               <button class="filter-btn active" onclick="setLogFilter('all', this)">Tất cả</button>
               <button class="filter-btn" onclick="setLogFilter('success', this)">✅ Thành công</button>
               <button class="filter-btn" onclick="setLogFilter('error', this)">❌ Lỗi</button>
-              <button class="filter-btn" onclick="setLogFilter('dang-bai', this)">📝 Đăng bài</button>
+              <button class="filter-btn" onclick="setLogFilter('dang', this)">📝 Đăng bài</button>
               <button class="filter-btn" onclick="setLogFilter('repost', this)">🔁 Repost</button>
-              <button class="filter-btn" onclick="setLogFilter('tuong-tac', this)">💬 Tương tác</button>
+              <button class="filter-btn" onclick="setLogFilter('tuong', this)">💬 Tương tác</button>
               <input type="search" class="log-search" id="logSearch" placeholder="🔍 Tìm kiếm log..." oninput="filterLogs()" />
             </div>
           </div>
 
-          <!-- Log items -->
-          <div id="logListView" class="log-list">
-            <div style="text-align:center; color:var(--text-faint); padding:32px; font-size:13.5px;">
-              <div style="font-size:32px; margin-bottom:12px;">📋</div>
-              Đang tải dữ liệu log...
+          <!-- Card view -->
+          <div id="logCardView">
+            <div id="logListView" class="log-list">
+              <div style="text-align:center; color:var(--text-faint); padding:32px; font-size:13.5px;">
+                <div style="font-size:32px; margin-bottom:12px;">📋</div>
+                Đang tải dữ liệu log...
+              </div>
             </div>
           </div>
 
-          <!-- fallback table (dùng bởi app.js) -->
-          <table id="logsTable" style="display:none;">
-            <thead><tr><th>Thời gian</th><th>Loại</th><th>Trạng thái</th><th>Chi tiết</th></tr></thead>
-            <tbody></tbody>
-          </table>
+          <!-- Table view -->
+          <div id="logTableView" style="display:none;">
+            <table id="logsTable">
+              <thead><tr><th>THỜI GIAN</th><th>LOẠI</th><th>TRẠNG THÁI</th><th>CHI TIẾT</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </main>
     </div>
@@ -239,6 +308,7 @@
 
     <script src="../html/theme.js" defer></script>
     <script src="../html/i18n.js" defer></script>
+    <script src="../html/auth.js"></script>
     <script src="../html/api.js" defer></script>
     <script src="../html/app.js" defer></script>
     <script src="../html/script.js" defer></script>
@@ -265,8 +335,61 @@
 
       // ── Log filter state ──
       let _logFilter = 'all';
-      const TYPE_LABELS = { 'dang-bai':'Đăng bài','repost':'Repost','tuong-tac':'Tương tác','interact':'Tương tác','post':'Đăng bài' };
-      const TYPE_ICONS  = { 'dang-bai':'📝','repost':'🔁','tuong-tac':'💬','interact':'💬','post':'📝' };
+      let _logView = 'card';
+
+      function setLogView(v) {
+        _logView = v;
+        document.getElementById('logCardView').style.display = v === 'card' ? '' : 'none';
+        document.getElementById('logTableView').style.display = v === 'table' ? '' : 'none';
+        document.getElementById('viewCardLogs').classList.toggle('active', v === 'card');
+        document.getElementById('viewTableLogs').classList.toggle('active', v === 'table');
+        if (v === 'table') _renderLogTable();
+      }
+
+      function _renderLogTable() {
+        const tbody = document.querySelector('#logsTable tbody');
+        if (!tbody) return;
+        let logs = window.state?.logs || [];
+        const q = document.getElementById('logSearch')?.value?.toLowerCase() || '';
+        if (_logFilter === 'success') logs = logs.filter(l => l.trang_thai === 'success');
+        else if (_logFilter === 'error') logs = logs.filter(l => l.trang_thai === 'error');
+        else if (_logFilter !== 'all') logs = logs.filter(l => String(l.loai||'').toLowerCase().includes(_logFilter));
+        if (q) logs = logs.filter(l =>
+          String(l.chi_tiet||'').toLowerCase().includes(q) ||
+          String(l.loai||'').toLowerCase().includes(q) ||
+          String(l.trang_thai||'').toLowerCase().includes(q)
+        );
+
+        const TYPE_MAP = {
+          'dang_bai':'📝 Đăng bài','dang-bai':'📝 Đăng bài','post':'📝 Đăng bài',
+          'repost':'🔁 Repost',
+          'tuong_tac':'💬 Tương tác','tuong-tac':'💬 Tương tác','interact':'💬 Tương tác',
+          'fanpage':'📄 Fanpage','fanpage_v2':'📄 Fanpage',
+        };
+        if (!logs.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-faint);padding:32px;">Không tìm thấy log nào.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = logs.map(log => {
+          const statusCls = log.trang_thai === 'success' ? 'badge-success' : log.trang_thai === 'error' ? 'badge-danger' : 'badge-warning';
+          const dotCls    = log.trang_thai === 'success' ? 'dot-success'   : log.trang_thai === 'error' ? 'dot-danger'   : 'dot-warning';
+          const typeKey   = String(log.loai||'').toLowerCase();
+          const typeLabel = TYPE_MAP[typeKey] || escapeHtml(log.loai||'—');
+          const time      = String(log.bat_dau||'').replace('T',' ').slice(0,16);
+          const detailHtml = renderDetailInline(log.chi_tiet || '');
+          const fullText   = renderDetailFull(log.chi_tiet || '');
+          const hasExpand  = (log.chi_tiet || '').split('\n').length > 1 || (log.chi_tiet||'').length > 80;
+          return `<tr>
+            <td><span style="font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);">${escapeHtml(time)}</span></td>
+            <td><span style="font-size:13px;font-weight:600;">${typeLabel}</span></td>
+            <td><span class="badge ${statusCls}" style="font-size:11.5px;"><span class="dot ${dotCls}"></span> ${escapeHtml(log.trang_thai||'')}</span></td>
+            <td>
+              <span class="log-detail" style="max-width:360px;display:inline-block;">${detailHtml}</span>
+              ${hasExpand ? `<button class="log-expand" style="margin-left:8px;" onclick="showLogDetail(${JSON.stringify(fullText)})">Chi tiết ↗</button>` : ''}
+            </td>
+          </tr>`;
+        }).join('');
+      }
 
       function setLogFilter(f, el) {
         _logFilter = f;
@@ -282,18 +405,106 @@
         if(typeof showToast==='function') showToast('info','Đang làm mới logs...');
       }
 
+      // ── Parse chi_tiet từ scheduler thành dạng [{name, result}] ──
+      // Các dạng thực tế từ scheduler.py:
+      //   "Bamos Coffee: SUCCESS"
+      //   "Bamos Coffee: False"           ← Python bool → error
+      //   "Bamos Coffee: no_token_skip"
+      //   "Bamos Coffee: SUCCESS:https://..." ← dạng cũ (Selenium)
+      //   "https://www.facebook.com/...: ..." ← dạng URL làm key (Selenium)
+      //   "Bamos Coffee: Lỗi đăng nhập..." ← error message
+      function parseLogLines(raw) {
+        if (!raw) return [];
+        const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+        return lines.map(line => {
+          // Tìm dấu ": " đầu tiên làm separator
+          const sep = line.indexOf(': ');
+          if (sep === -1) return { name: line, result: 'unknown' };
+          const name = line.slice(0, sep).trim();
+          const rest = line.slice(sep + 2).trim();
+
+          // Xác định kết quả
+          const up = rest.toUpperCase();
+          if (up === 'SUCCESS' || up.startsWith('SUCCESS:') || up.startsWith('SUCCESS ')) {
+            return { name: cleanName(name), result: 'success' };
+          }
+          if (up === 'TRUE') {
+            return { name: cleanName(name), result: 'success' };
+          }
+          if (up === 'FALSE' || up === 'NONE' || up === 'NONE:' || rest === 'False' || rest === 'None') {
+            return { name: cleanName(name), result: 'error' };
+          }
+          if (up.startsWith('PENDING') || up.startsWith('PENDING:')) {
+            return { name: cleanName(name), result: 'pending' };
+          }
+          if (up === 'NO_TOKEN_SKIP' || rest === 'no_token_skip') {
+            return { name: cleanName(name), result: 'skip' };
+          }
+          // Nếu rest là error message hoặc URL lỗi
+          if (up.startsWith('ERROR') || up.startsWith('LỖI') || up.startsWith('LOI')) {
+            return { name: cleanName(name), result: 'error', msg: rest };
+          }
+          // Nếu name là URL facebook → dùng slug làm name
+          return { name: cleanName(name), result: 'info', msg: rest };
+        });
+      }
+
+      function cleanName(s) {
+        // Nếu là URL facebook.com/... → lấy slug cuối
+        if (/https?:\/\/(www\.)?facebook\.com\//i.test(s)) {
+          const slug = s.replace(/https?:\/\/(www\.)?facebook\.com\//i, '').split('/')[0].split('?')[0];
+          return slug || s;
+        }
+        return s;
+      }
+
+      // Render chi_tiet thành HTML inline (tên page + icon kết quả)
+      function renderDetailInline(raw) {
+        if (!raw) return '<span style="color:var(--text-faint)">—</span>';
+        const items = parseLogLines(raw);
+        if (!items.length) return escapeHtml(raw.slice(0, 80));
+
+        // Nếu chỉ 1 dòng không có pattern rõ ràng (dang_bai nhóm)
+        if (items.length === 1 && items[0].result === 'unknown') {
+          return escapeHtml(raw.slice(0, 80)) + (raw.length > 80 ? '…' : '');
+        }
+
+        return items.map(it => {
+          const name = escapeHtml(it.name);
+          let icon = '';
+          if (it.result === 'success') icon = '<span class="res-ok">✓</span>';
+          else if (it.result === 'error') icon = '<span class="res-err">✗</span>';
+          else if (it.result === 'pending') icon = '<span class="res-pend">⏳</span>';
+          else if (it.result === 'skip') icon = '<span style="color:var(--text-faint)">⊘</span>';
+          else icon = '<span style="color:var(--text-faint)">·</span>';
+          return `${icon} <span class="page-name">${name}</span>`;
+        }).join('<span style="color:var(--border);margin:0 4px">|</span>');
+      }
+
+      // Render popup chi_tiet đầy đủ — dạng table đẹp
+      function renderDetailFull(raw) {
+        if (!raw) return '—';
+        const items = parseLogLines(raw);
+        if (!items.length || (items.length === 1 && items[0].result === 'unknown')) {
+          return escapeHtml(raw);
+        }
+        return items.map(it => {
+          let icon = it.result === 'success' ? '✅' : it.result === 'error' ? '❌' : it.result === 'pending' ? '⏳' : it.result === 'skip' ? '⊘' : '•';
+          const detail = it.msg ? ` — ${it.msg}` : '';
+          return `${icon}  ${it.name}${detail}`;
+        }).join('\n');
+      }
+
       function renderLogItems() {
         const list = document.getElementById('logListView');
         if (!list) return;
         let logs = window.state?.logs || [];
         const q = document.getElementById('logSearch')?.value?.toLowerCase() || '';
 
-        // Filter by type
         if (_logFilter === 'success') logs = logs.filter(l => l.trang_thai === 'success');
         else if (_logFilter === 'error') logs = logs.filter(l => l.trang_thai === 'error');
         else if (_logFilter !== 'all') logs = logs.filter(l => String(l.loai||'').toLowerCase().includes(_logFilter));
 
-        // Filter by search
         if (q) logs = logs.filter(l =>
           String(l.chi_tiet||'').toLowerCase().includes(q) ||
           String(l.loai||'').toLowerCase().includes(q) ||
@@ -305,28 +516,58 @@
             <div style="font-size:32px;margin-bottom:12px;">${_logFilter === 'error' ? '🎉' : '📭'}</div>
             ${_logFilter === 'error' ? 'Không có lỗi nào — bot đang chạy tốt!' : 'Không tìm thấy log nào.'}
           </div>`;
+          _renderLogTable();
           return;
         }
+
+        // Type labels & icons — bao gồm fanpage_v2
+        const TYPE_MAP = {
+          'dang_bai':'📝 Đăng bài','dang-bai':'📝 Đăng bài','post':'📝 Đăng bài',
+          'repost':'🔁 Repost',
+          'tuong_tac':'💬 Tương tác','tuong-tac':'💬 Tương tác','interact':'💬 Tương tác',
+          'fanpage':'📄 Fanpage','fanpage_v2':'📄 Fanpage',
+        };
 
         list.innerHTML = logs.map((log, i) => {
           const status = log.trang_thai || '';
           const statusCls = status === 'success' ? 'success' : status === 'error' ? 'error' : 'warning';
-          const badgeCls = status === 'success' ? 'badge-success' : status === 'error' ? 'badge-danger' : 'badge-warning';
-          const dotCls = status === 'success' ? 'dot-success' : status === 'error' ? 'dot-danger' : 'dot-warning';
-          const typeKey = String(log.loai||'').toLowerCase();
-          const typeIcon = TYPE_ICONS[typeKey] || '🔹';
-          const typeLabel = TYPE_LABELS[typeKey] || escapeHtml(log.loai||'');
-          const time = String(log.bat_dau||'').replace('T',' ').slice(0,16);
-          const detail = log.chi_tiet ? escapeHtml(String(log.chi_tiet).slice(0,80)) + (log.chi_tiet.length > 80 ? '…' : '') : '—';
+          const badgeCls  = status === 'success' ? 'badge-success' : status === 'error' ? 'badge-danger' : 'badge-warning';
+          const dotCls    = status === 'success' ? 'dot-success'   : status === 'error' ? 'dot-danger'   : 'dot-warning';
+          const typeKey   = String(log.loai||'').toLowerCase();
+          const typeLabel = TYPE_MAP[typeKey] || escapeHtml(log.loai||'—');
+          const time      = String(log.bat_dau||'').replace('T',' ').slice(0,16);
 
-          return `<div class="log-item ${statusCls}" style="animation-delay:${i*0.025}s">
+          const detailHtml = renderDetailInline(log.chi_tiet || '');
+          const fullText   = renderDetailFull(log.chi_tiet || '');
+          const hasExpand  = (log.chi_tiet || '').split('\n').length > 1 || (log.chi_tiet||'').length > 80;
+
+          return `<div class="log-item ${statusCls}" style="animation-delay:${i*0.02}s">
             <span class="log-time">${escapeHtml(time)}</span>
-            <span class="log-type">${typeIcon} ${typeLabel}</span>
-            <span class="log-status"><span class="badge ${badgeCls}"><span class="dot ${dotCls}"></span>${escapeHtml(status)}</span></span>
-            <span class="log-detail" title="${escapeHtml(log.chi_tiet||'')}">${detail}</span>
-            ${log.chi_tiet && log.chi_tiet.length > 80 ? `<button class="log-expand" onclick="alert('${escapeHtml(log.chi_tiet).replace(/'/g,"\\'")}')">↗</button>` : '<span></span>'}
+            <span class="log-type">${typeLabel}</span>
+            <span class="log-status"><span class="badge ${badgeCls}" style="font-size:11px;"><span class="dot ${dotCls}"></span>${escapeHtml(status)}</span></span>
+            <span class="log-detail">${detailHtml}</span>
+            ${hasExpand
+              ? `<button class="log-expand" onclick="showLogDetail(${JSON.stringify(fullText)})">Chi tiết ↗</button>`
+              : '<span></span>'}
           </div>`;
         }).join('');
+
+        // Sync table view nếu đang mở
+        if (_logView === 'table') _renderLogTable();
+      }
+
+      function showLogDetail(text) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+        overlay.innerHTML = `<div style="background:var(--glass-strong);border:1px solid var(--glass-border);border-radius:var(--radius);padding:24px 28px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.5);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <span style="font-size:13px;font-weight:700;color:var(--text);">📋 Chi tiết log</span>
+            <button onclick="this.closest('[style*=fixed]').remove()" style="padding:4px 10px;border-radius:var(--radius-pill);border:1px solid var(--border);background:var(--surface-2);color:var(--text-muted);cursor:pointer;font-size:12px;">✕ Đóng</button>
+          </div>
+          <pre style="font-size:12.5px;color:var(--text-muted);white-space:pre-wrap;word-break:break-word;line-height:1.8;font-family:var(--font-mono);margin:0;padding:14px;background:var(--bg-soft);border-radius:var(--radius-sm);border:1px solid var(--border-soft);">${escapeHtml(text)}</pre>
+        </div>`;
+        overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+        document.body.appendChild(overlay);
       }
 
       function updateLogStats() {

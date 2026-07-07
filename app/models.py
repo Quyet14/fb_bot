@@ -39,6 +39,12 @@ interact_schedule_groups = Table(
     Column("group_id", Integer, ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True),
 )
 
+fanpage_schedule_fanpages = Table(
+    "fanpage_schedule_fanpages", Base.metadata,
+    Column("fanpage_schedule_id", Integer, ForeignKey("fanpage_schedules.id", ondelete="CASCADE"), primary_key=True),
+    Column("group_id", Integer, ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True),
+)
+
 
 # ============================================================
 # NHOM & CHU DE
@@ -50,6 +56,7 @@ class Group(Base):
     ten = Column(String(255), nullable=False)
     url = Column(String(500), nullable=False, unique=True)
     ghi_chu = Column(String(500), nullable=True)
+    loai = Column(String(20), nullable=False, default="group")  # "group" | "fanpage"
     tao_luc = Column(DateTime, default=datetime.datetime.utcnow)
 
 
@@ -128,6 +135,29 @@ class InteractSchedule(Base):
     tao_luc = Column(DateTime, default=datetime.datetime.utcnow)
 
     groups = relationship("Group", secondary=interact_schedule_groups)
+
+
+# ============================================================
+# LICH DANG BAI FANPAGE
+# ============================================================
+class FanpageSchedule(Base):
+    __tablename__ = "fanpage_schedules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    thu = Column(String(20), nullable=False)
+    gio = Column(String(5), nullable=False)
+
+    topic_id = Column(Integer, ForeignKey("topics.id"), nullable=True)
+    content_id = Column(Integer, ForeignKey("user_contents.id"), nullable=True)
+    giu_nguyen_goc = Column(Boolean, default=True)
+
+    dang_kem_anh = Column(Boolean, default=False)
+    active = Column(Boolean, default=True)
+    tao_luc = Column(DateTime, default=datetime.datetime.utcnow)
+
+    topic = relationship("Topic")
+    content = relationship("UserContent")
+    fanpages = relationship("Group", secondary=fanpage_schedule_fanpages)
 
 
 # ============================================================

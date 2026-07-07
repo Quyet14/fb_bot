@@ -106,7 +106,7 @@ def thuc_thi_tien_trinh_repost(nhom_nguon_urls, nhom_dich_urls, so_bai, thu_muc_
     driver = None
     try:
         dong_chrome()
-        driver = tao_driver(headless=app_config.HEADLESS_MODE)
+        driver = tao_driver(headless=True)   # scheduled job — luôn chạy ngầm
         wait = WebDriverWait(driver, 30)
         driver.get("https://www.facebook.com")
         time.sleep(5)

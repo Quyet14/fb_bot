@@ -22,10 +22,10 @@
 
   /* Channel colours — one per function */
   --c-dashboard: #38bdf8;   --c-dashboard-soft: #0f2c3d;
-  --c-groups:    #a78bfa;   --c-groups-soft: #241f42;
-  --c-topics:    #fbbf24;   --c-topics-soft: #3a2c10;
-  --c-schedules: #34d399;   --c-schedules-soft: #0f2f27;
-  --c-logs:      #fb7185;   --c-logs-soft: #3a1620;
+  --c-groups:    #c4b5fd;   --c-groups-soft: #2d2050;
+  --c-topics:    #fcd34d;   --c-topics-soft: #3d2e0c;
+  --c-schedules: #6ee7b7;   --c-schedules-soft: #0f2f27;
+  --c-logs:      #fda4af;   --c-logs-soft: #3d1420;
 
   --shadow: 0 10px 28px rgba(3, 6, 16, 0.45);
   --shadow-lift: 0 24px 48px -14px rgba(3, 6, 16, 0.6), 0 2px 8px rgba(3, 6, 16, 0.3);

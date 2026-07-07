@@ -9,8 +9,8 @@ const TRANSLATIONS = {
     // Nav
     'nav.dashboard':  'Dashboard',
     'nav.groups':     'Nhóm',
-    'nav.topics':     'Chủ đề',
-    'nav.schedules':  'Lịch đăng',
+    'nav.topics':     'Chủ Đề',
+    'nav.schedules':  'Lịch Nhóm',
     'nav.logs':       'Logs',
     'nav.settings':   'Cài đặt',
 

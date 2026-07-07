@@ -102,7 +102,7 @@ def thuc_thi_tien_trinh_tuong_tac(nhom_urls, gioi_han_like, gioi_han_comment):
     driver = None
     try:
         dong_chrome()
-        driver = tao_driver()
+        driver = tao_driver(headless=True)   # scheduled job — luôn chạy ngầm
         wait = WebDriverWait(driver, 30)
         driver.get("https://www.facebook.com")
         time.sleep(5)

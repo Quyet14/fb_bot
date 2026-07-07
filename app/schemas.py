@@ -10,12 +10,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 # ============================================================
-# NHOM
+# NHOM / FANPAGE
 # ============================================================
 class GroupBase(BaseModel):
     ten: str
     url: str
     ghi_chu: Optional[str] = None
+    loai: str = "group"  # "group" | "fanpage"
 
 
 class GroupCreate(GroupBase):
@@ -26,6 +27,7 @@ class GroupUpdate(BaseModel):
     ten: Optional[str] = None
     url: Optional[str] = None
     ghi_chu: Optional[str] = None
+    loai: Optional[str] = None
 
 
 class GroupOut(GroupBase):
@@ -242,3 +244,45 @@ class RunRepostNow(BaseModel):
 
 class RunTuongTacNow(BaseModel):
     group_ids: List[int]
+
+
+# ============================================================
+# LICH DANG BAI FANPAGE
+# ============================================================
+class FanpageScheduleBase(BaseModel):
+    thu: str
+    gio: str
+    topic_id: Optional[int] = None
+    content_id: Optional[int] = None
+    giu_nguyen_goc: bool = True
+    dang_kem_anh: bool = False
+    active: bool = True
+    fanpage_ids: List[int] = Field(default_factory=list)
+
+
+class FanpageScheduleCreate(FanpageScheduleBase):
+    pass
+
+
+class FanpageScheduleUpdate(BaseModel):
+    thu: Optional[str] = None
+    gio: Optional[str] = None
+    topic_id: Optional[int] = None
+    content_id: Optional[int] = None
+    giu_nguyen_goc: Optional[bool] = None
+    dang_kem_anh: Optional[bool] = None
+    active: Optional[bool] = None
+    fanpage_ids: Optional[List[int]] = None
+
+
+class FanpageScheduleOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    thu: str
+    gio: str
+    dang_kem_anh: bool
+    active: bool
+    giu_nguyen_goc: bool = True
+    topic: Optional[TopicOut] = None
+    content: Optional[UserContentOut] = None
+    fanpages: List[GroupOut]

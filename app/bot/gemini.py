@@ -8,7 +8,7 @@ import urllib.request
 import urllib.error
 
 from app.config import settings
-GEMINI_API_KEY = "......"
+GEMINI_API_KEY = "...."
 
 
 def goi_gemini(prompt, so_lan_thu=3):

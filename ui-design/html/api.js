@@ -11,19 +11,32 @@ async function fetchJson(url, options = {}) {
   const candidates = API_BASE_CANDIDATES.map(base => makeApiUrl(url, base));
   let lastError = null;
 
-  // Đính kèm Authorization header nếu có token
-  const authHeaders = (typeof Auth !== 'undefined') ? Auth.getAuthHeaders() : {};
+  // Đính kèm Authorization header — ưu tiên Auth object, fallback đọc trực tiếp localStorage
+  let token = null;
+  if (typeof Auth !== 'undefined' && Auth.getAccessToken) {
+    token = Auth.getAccessToken();
+  } else {
+    token = localStorage.getItem('fbbot-access-token');
+  }
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
   options.headers = { ...authHeaders, ...options.headers };
+
+  // Debug: log nếu không có token
+  if (!token) {
+    console.warn('[fetchJson] No token for:', url);
+  }
 
   for (const candidate of candidates) {
     try {
       const res = await fetch(candidate, options);
       if (res.status === 204) return null;
-      // Nếu 401 → token hết hạn, thử silent refresh rồi retry
-      if (res.status === 401 && typeof Auth !== 'undefined') {
-        const refreshed = await Auth.refreshAccessToken();
+      if (res.status === 401) {
+        // Thử silent refresh
+        const refreshFn = typeof Auth !== 'undefined' ? () => Auth.refreshAccessToken() : null;
+        const refreshed = refreshFn ? await refreshFn() : false;
         if (refreshed) {
-          options.headers = { ...Auth.getAuthHeaders(), ...options.headers };
+          const newToken = typeof Auth !== 'undefined' ? Auth.getAccessToken() : localStorage.getItem('fbbot-access-token');
+          if (newToken) options.headers = { ...options.headers, Authorization: `Bearer ${newToken}` };
           const retry = await fetch(candidate, options);
           if (retry.status === 204) return null;
           if (!retry.ok) {
@@ -33,8 +46,14 @@ async function fetchJson(url, options = {}) {
           return retry.json();
         }
         // Refresh thất bại → redirect login
-        Auth.clearTokens();
-        Auth._redirectToLogin();
+        if (typeof Auth !== 'undefined') {
+          Auth.clearTokens();
+          Auth._redirectToLogin();
+        } else {
+          localStorage.removeItem('fbbot-access-token');
+          localStorage.removeItem('fbbot-refresh-token');
+          window.location.href = window.location.pathname.includes('/pages/') ? '../html/login.html' : 'login.html';
+        }
         return null;
       }
       if (!res.ok) {

@@ -12,10 +12,10 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="css/tokens.css?v=202607061201" />
-    <link rel="stylesheet" href="css/base.css?v=202607061201" />
-    <link rel="stylesheet" href="css/components.css?v=202607061201" />
-    <link rel="stylesheet" href="css/responsive.css?v=202607061201" />
+    <link rel="stylesheet" href="css/tokens.css?v=202507080001" />
+    <link rel="stylesheet" href="css/base.css?v=202507080001" />
+    <link rel="stylesheet" href="css/components.css?v=202507080001" />
+    <link rel="stylesheet" href="css/responsive.css?v=202507080001" />
     <style>
       /* ── Dashboard extras ── */
       .stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
@@ -171,8 +171,9 @@
           <nav>
             <a href="dashboard.html" class="nav-dashboard active"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
             <a href="../pages/groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
-            <a href="../pages/topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ đề</span></a>
-            <a href="../pages/schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch đăng</span></a>
+            <a href="../pages/topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
+            <a href="../pages/schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
+            <a href="../pages/fanpage-schedules.html" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
             <a href="../pages/logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
           </nav>
           <div class="sidebar-status">
@@ -260,15 +261,15 @@
           </a>
           <a href="../pages/schedules.html" class="quick-link">
             <div class="ql-icon" style="background:var(--c-schedules-soft)">📅</div>
-            Lịch đăng
+            Lịch Nhóm
           </a>
           <a href="../pages/logs.html" class="quick-link">
             <div class="ql-icon" style="background:var(--c-logs-soft)">📋</div>
             Xem Logs
           </a>
-          <a href="../pages/schedules.html?mode=create" class="quick-link">
+          <a href="../pages/fanpage-schedules.html" class="quick-link">
             <div class="ql-icon" style="background:var(--c-dashboard-soft)">➕</div>
-            Tạo lịch mới
+            Lịch Fanpage
           </a>
         </div>
 
@@ -321,7 +322,7 @@
                 </div>
                 <div class="upcoming-item">
                   <span class="upcoming-dot" style="background:var(--c-topics)"></span>
-                  <span class="upcoming-time">Chủ đề</span>
+                  <span class="upcoming-time">Chủ Đề</span>
                   <span class="upcoming-desc" id="summaryTopics">—</span>
                 </div>
                 <div class="upcoming-item">

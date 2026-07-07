@@ -31,6 +31,40 @@ function parseIds(value) {
     .filter(Boolean);
 }
 
+// Dashboard log detail formatter — hiện tên nhóm/page, ẩn URL
+function _dashFormatDetail(raw) {
+  if (!raw) return '—';
+  // Parse multi-line: "Tên: SUCCESS" | "Tên: False" | "Tên: no_token_skip"
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const parsed = lines.map(line => {
+    const sep = line.indexOf(': ');
+    if (sep === -1) return null;
+    let name = line.slice(0, sep).trim();
+    const rest = line.slice(sep + 2).trim().toUpperCase();
+    // Clean URL thành slug
+    if (/https?:\/\/(www\.)?facebook\.com\//i.test(name)) {
+      const slug = name.replace(/https?:\/\/(www\.)?facebook\.com\//i, '').split('/')[0].split('?')[0];
+      name = slug || name;
+    }
+    // Xác định result
+    let icon = '·';
+    if (rest === 'SUCCESS' || rest.startsWith('SUCCESS:') || rest === 'TRUE') {
+      icon = '<span style="color:var(--success)">✓</span>';
+    } else if (rest === 'FALSE' || rest === 'NONE' || rest.startsWith('ERROR')) {
+      icon = '<span style="color:var(--danger)">✗</span>';
+    } else if (rest.startsWith('PENDING')) {
+      icon = '<span style="color:var(--warning)">⏳</span>';
+    } else if (rest === 'NO_TOKEN_SKIP') {
+      icon = '<span style="color:var(--text-faint)">⊘</span>';
+    }
+    return { name: escapeHtml(name), icon };
+  }).filter(Boolean);
+  if (!parsed.length) return escapeHtml(raw.slice(0, 60)) + (raw.length > 60 ? '…' : '');
+  // Giới hạn 2 item đầu tiên cho dashboard
+  return parsed.slice(0, 2).map(p => `${p.icon} ${p.name}`).join(' <span style="color:var(--border)">·</span> ')
+    + (parsed.length > 2 ? ` <span style="color:var(--text-faint)">+${parsed.length - 2}</span>` : '');
+}
+
 function renderGroups() {
   const tbody = document.querySelector('#groupsTable tbody');
   if (!tbody) return;
@@ -241,20 +275,29 @@ function _renderDashboardEnhanced() {
     if (!recent.length) {
       logsEl.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-faint);padding:20px;">Chưa có hoạt động nào</td></tr>`;
     } else {
+      const TYPE_MAP = {
+        dang_bai:'📝 Đăng bài', 'dang-bai':'📝 Đăng bài', post:'📝 Đăng bài',
+        repost:'🔁 Repost',
+        tuong_tac:'💬 Tương tác', 'tuong-tac':'💬 Tương tác', interact:'💬 Tương tác',
+        fanpage:'📄 Fanpage', fanpage_v2:'📄 Fanpage',
+      };
       logsEl.innerHTML = recent.map(log => {
         const statusClass = log.trang_thai === 'success' ? 'dot-success' : log.trang_thai === 'error' ? 'dot-danger' : 'dot-warning';
         const time = String(log.bat_dau || '').replace('T', ' ').slice(0, 16);
-        const detail = log.chi_tiet ? escapeHtml(String(log.chi_tiet).slice(0, 60)) + (log.chi_tiet.length > 60 ? '…' : '') : '—';
+        const typeKey = String(log.loai || '').toLowerCase();
+        const typeLabel = TYPE_MAP[typeKey] || escapeHtml(log.loai || '—');
+        const detail = _dashFormatDetail(log.chi_tiet || '');
         return `<tr>
-          <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-faint);">${escapeHtml(time)}</td>
-          <td>${escapeHtml(log.loai || '')}</td>
-          <td><span class="dot ${statusClass}" style="display:inline-block;margin-right:4px;"></span>${escapeHtml(log.trang_thai || '')}</td>
-          <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${detail}</td>
+          <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-faint);white-space:nowrap;">${escapeHtml(time)}</td>
+          <td style="font-size:12.5px;">${typeLabel}</td>
+          <td><span class="dot ${statusClass}" style="display:inline-block;margin-right:4px;"></span><span style="font-size:12.5px;">${escapeHtml(log.trang_thai || '')}</span></td>
+          <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;">${detail}</td>
         </tr>`;
       }).join('');
     }
   }
 
+  // Fix Bug 1 & 3: Declare upcomingEl at the start of this block
   const upcomingEl = document.querySelector('#dashboardUpcoming');
   if (upcomingEl) {
     const all = [
@@ -276,6 +319,22 @@ function _renderDashboardEnhanced() {
         </div>`;
       }).join('');
     }
+  }
+
+  // Bug 4 fix: fill summary panel elements directly so they update whenever _renderDashboardEnhanced runs
+  const summaryGroupsEl = document.getElementById('summaryGroups');
+  const summaryTopicsEl = document.getElementById('summaryTopics');
+  const summarySchedulesEl = document.getElementById('summarySchedules');
+  const summaryLogsEl = document.getElementById('summaryLogs');
+  if (summaryGroupsEl || summaryTopicsEl || summarySchedulesEl || summaryLogsEl) {
+    const gCount = state.groups?.length ?? 0;
+    const tCount = state.topics?.length ?? 0;
+    const sTotal = (state.schedules?.posts?.length || 0) + (state.schedules?.reposts?.length || 0) + (state.schedules?.interacts?.length || 0);
+    const lCount = state.logs?.length ?? 0;
+    if (summaryGroupsEl) summaryGroupsEl.textContent = gCount + ' nhóm';
+    if (summaryTopicsEl) summaryTopicsEl.textContent = tCount + ' chủ đề';
+    if (summarySchedulesEl) summarySchedulesEl.textContent = sTotal + ' lịch';
+    if (summaryLogsEl) summaryLogsEl.textContent = lCount + ' bản ghi';
   }
 }
 
@@ -304,6 +363,22 @@ async function loadData() {
     console.error('Failed to load data', error);
     const message = error.message || 'Không thể kết nối backend';
     setStatus(message, true);
+    // Hiển thị toast lỗi để user biết
+    if (typeof showToast === 'function') {
+      showToast('error', 'Lỗi tải dữ liệu', message.slice(0, 120));
+    }
+    // Nếu 401 - redirect login
+    if (message.includes('401') || message.includes('Not authenticated') || message.includes('Unauthorized')) {
+      if (typeof Auth !== 'undefined') {
+        const refreshed = await Auth.refreshAccessToken();
+        if (!refreshed) {
+          Auth.clearTokens();
+          Auth._redirectToLogin();
+        } else {
+          setTimeout(loadData, 500); // retry sau refresh
+        }
+      }
+    }
   }
 }
 
@@ -653,6 +728,33 @@ function handleCreateRoute() {
 
 
 function init() {
+  // Đảm bảo Auth được load trước
+  if (typeof Auth === 'undefined') {
+    console.error('[app.js] Auth not loaded — auth.js must be loaded before app.js');
+    setStatus('Lỗi: không load được auth.js. Vui lòng refresh trang.', true);
+    return;
+  }
+
+  // Kiểm tra token ngay — nếu không có thì redirect luôn không cần gọi API
+  const token = Auth.getAccessToken();
+  if (!token) {
+    console.warn('[app.js] No token found, redirecting to login');
+    Auth._redirectToLogin();
+    return;
+  }
+
+  // Chờ Auth guard trước khi load data — tránh 401 khi chưa có token
+  Auth.guardPage().then(ok => {
+    if (!ok) return; // guardPage đã redirect sang login
+    _initAfterAuth();
+  }).catch(err => {
+    console.error('[app.js] guardPage error:', err);
+    setStatus('Lỗi xác thực. Vui lòng đăng nhập lại.', true);
+    Auth._redirectToLogin();
+  });
+}
+
+function _initAfterAuth() {
   loadData();
   handleCreateRoute();
   document.querySelector('#groupForm')?.addEventListener('submit', handleAddGroup);
@@ -662,8 +764,6 @@ function init() {
   document.querySelector('#groupsTable')?.addEventListener('click', handleEditOrDelete);
   document.querySelector('#topicsTable')?.addEventListener('click', handleEditOrDelete);
   document.querySelector('#schedulesRoot')?.addEventListener('click', handleEditOrDelete);
-
-
   document.querySelector('#scheduleDangBaiMode')?.addEventListener('change', updateScheduleFormFields);
 }
 
@@ -716,15 +816,23 @@ function renderDashboardEnhanced() {
     if (!recent.length) {
       logsEl.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-faint);padding:20px;">Chưa có hoạt động nào</td></tr>`;
     } else {
+      const TYPE_MAP = {
+        dang_bai:'📝 Đăng bài', 'dang-bai':'📝 Đăng bài', post:'📝 Đăng bài',
+        repost:'🔁 Repost',
+        tuong_tac:'💬 Tương tác', 'tuong-tac':'💬 Tương tác', interact:'💬 Tương tác',
+        fanpage:'📄 Fanpage', fanpage_v2:'📄 Fanpage',
+      };
       logsEl.innerHTML = recent.map(log => {
         const statusClass = log.trang_thai === 'success' ? 'dot-success' : log.trang_thai === 'error' ? 'dot-danger' : 'dot-warning';
         const time = String(log.bat_dau || '').replace('T', ' ').slice(0, 16);
-        const detail = log.chi_tiet ? escapeHtml(String(log.chi_tiet).slice(0, 60)) + (log.chi_tiet.length > 60 ? '…' : '') : '—';
+        const typeKey = String(log.loai || '').toLowerCase();
+        const typeLabel = TYPE_MAP[typeKey] || escapeHtml(log.loai || '—');
+        const detail = _dashFormatDetail(log.chi_tiet || '');
         return `<tr>
-          <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-faint);">${escapeHtml(time)}</td>
-          <td>${escapeHtml(log.loai || '')}</td>
-          <td><span class="dot ${statusClass}" style="display:inline-block;"></span> ${escapeHtml(log.trang_thai || '')}</td>
-          <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${detail}</td>
+          <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-faint);white-space:nowrap;">${escapeHtml(time)}</td>
+          <td style="font-size:12.5px;">${typeLabel}</td>
+          <td><span class="dot ${statusClass}" style="display:inline-block;margin-right:4px;"></span><span style="font-size:12.5px;">${escapeHtml(log.trang_thai || '')}</span></td>
+          <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;">${detail}</td>
         </tr>`;
       }).join('');
     }
@@ -752,6 +860,22 @@ function renderDashboardEnhanced() {
         </div>`;
       }).join('');
     }
+  }
+
+  // Bug 4 fix: fill summary panel elements directly
+  const summaryGroupsEl = document.getElementById('summaryGroups');
+  const summaryTopicsEl = document.getElementById('summaryTopics');
+  const summarySchedulesEl = document.getElementById('summarySchedules');
+  const summaryLogsEl = document.getElementById('summaryLogs');
+  if (summaryGroupsEl || summaryTopicsEl || summarySchedulesEl || summaryLogsEl) {
+    const gCount = state.groups?.length ?? 0;
+    const tCount = state.topics?.length ?? 0;
+    const sTotal = (state.schedules?.posts?.length || 0) + (state.schedules?.reposts?.length || 0) + (state.schedules?.interacts?.length || 0);
+    const lCount = state.logs?.length ?? 0;
+    if (summaryGroupsEl) summaryGroupsEl.textContent = gCount + ' nhóm';
+    if (summaryTopicsEl) summaryTopicsEl.textContent = tCount + ' chủ đề';
+    if (summarySchedulesEl) summarySchedulesEl.textContent = sTotal + ' lịch';
+    if (summaryLogsEl) summaryLogsEl.textContent = lCount + ' bản ghi';
   }
 }
 
