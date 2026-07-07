@@ -11,15 +11,14 @@ from app import models, crud
 from app.config import settings
 from app.database import SessionLocal
 from app.bot import browser as bot_browser
-from app.bot.dang_bai import thuc_thi_tien_trinh_dang
+from app.bot.dang_bai import thuc_thi_tien_trinh_dang, thuc_thi_tien_trinh_dang_fanpage
 from app.bot.repost import thuc_thi_tien_trinh_repost
 from app.bot.tuong_tac import thuc_thi_tien_trinh_tuong_tac
 
 
 def _sync_headless_from_db(cfg):
-    """Cập nhật HEADLESS_MODE từ DB settings trước khi chạy job."""
-    headless = getattr(cfg, 'headless_mode', settings.HEADLESS_MODE)
-    settings.HEADLESS_MODE = headless
+    """Scheduled jobs luôn chạy headless — không cần giao diện."""
+    settings.HEADLESS_MODE = True
 
 THU_SANG_SO = {
     "monday": "mon", "tuesday": "tue", "wednesday": "wed",
@@ -41,7 +40,7 @@ scheduler = BackgroundScheduler(
 )
 
 
-def _lay_cau_hinh_hien_tai(db):
+def _lay_cau_hinh_hien_tai(db, user_id=None):
     cfg = crud.ensure_settings(db, {
         "thu_muc_anh": settings.THU_MUC_ANH_MAC_DINH,
         "gioi_han_like": settings.GIOI_HAN_LIKE_MAC_DINH,
@@ -49,8 +48,17 @@ def _lay_cau_hinh_hien_tai(db):
         "thoi_gian_cho_giua_cac_nhom": settings.THOI_GIAN_CHO_MAC_DINH,
         "ngon_ngu": "vi",
         "headless_mode": settings.HEADLESS_MODE,
-    })
+    }, user_id=user_id)
     return cfg
+
+
+def _get_user_id_from_schedule(db, collection_name: str, schedule_id: int):
+    """Retrieve user_id from a schedule document. Returns None if not found."""
+    if settings.USE_MONGODB:
+        from app.mongo_db import get_collection
+        doc = get_collection(collection_name).find_one({"id": schedule_id})
+        return doc.get("user_id") if doc else None
+    return None  # SQLAlchemy path doesn't need user_id for backward compat
 
 
 # ============================================================
@@ -59,12 +67,13 @@ def _lay_cau_hinh_hien_tai(db):
 def job_dang_bai(schedule_id: int):
     db = SessionLocal()
     try:
-        sch = crud.get_post_schedule(db, schedule_id)
+        user_id = _get_user_id_from_schedule(db, "post_schedules", schedule_id)
+        sch = crud.get_post_schedule(db, schedule_id, user_id=user_id)
         if not sch or not sch.active:
             return
-        cfg = _lay_cau_hinh_hien_tai(db)
+        cfg = _lay_cau_hinh_hien_tai(db, user_id=user_id)
         _sync_headless_from_db(cfg)
-        log = crud.create_log(db, "dang_bai", schedule_id)
+        log = crud.create_log(db, "dang_bai", schedule_id, user_id=user_id)
         # Chế độ đăng bài:
         # - Nếu có content (đã resolve): dùng nội dung người dùng (giữ nguyên hoặc nhờ Gemini viết lại)
         # - Ngược lại: fallback theo topic
@@ -101,12 +110,13 @@ def job_dang_bai(schedule_id: int):
 def job_repost(schedule_id: int):
     db = SessionLocal()
     try:
-        sch = crud.get_repost_schedule(db, schedule_id)
+        user_id = _get_user_id_from_schedule(db, "repost_schedules", schedule_id)
+        sch = crud.get_repost_schedule(db, schedule_id, user_id=user_id)
         if not sch or not sch.active:
             return
-        cfg = _lay_cau_hinh_hien_tai(db)
+        cfg = _lay_cau_hinh_hien_tai(db, user_id=user_id)
         _sync_headless_from_db(cfg)
-        log = crud.create_log(db, "repost", schedule_id)
+        log = crud.create_log(db, "repost", schedule_id, user_id=user_id)
         thanh_cong, chi_tiet = thuc_thi_tien_trinh_repost(
             nhom_nguon_urls=[g.url for g in sch.nhom_nguon],
             nhom_dich_urls=[g.url for g in sch.nhom_dich],
@@ -121,16 +131,53 @@ def job_repost(schedule_id: int):
 def job_tuong_tac(schedule_id: int):
     db = SessionLocal()
     try:
-        sch = crud.get_interact_schedule(db, schedule_id)
+        user_id = _get_user_id_from_schedule(db, "interact_schedules", schedule_id)
+        sch = crud.get_interact_schedule(db, schedule_id, user_id=user_id)
         if not sch or not sch.active:
             return
-        cfg = _lay_cau_hinh_hien_tai(db)
+        cfg = _lay_cau_hinh_hien_tai(db, user_id=user_id)
         _sync_headless_from_db(cfg)
-        log = crud.create_log(db, "tuong_tac", schedule_id)
+        log = crud.create_log(db, "tuong_tac", schedule_id, user_id=user_id)
         thanh_cong, chi_tiet = thuc_thi_tien_trinh_tuong_tac(
             nhom_urls=[g.url for g in sch.groups],
             gioi_han_like=cfg.gioi_han_like,
             gioi_han_comment=cfg.gioi_han_comment,
+        )
+        crud.finish_log(db, log.id, "success" if thanh_cong else "error", chi_tiet)
+    finally:
+        db.close()
+
+
+def job_fanpage(schedule_id: int):
+    """Job đăng bài lên Fanpage theo lịch."""
+    db = SessionLocal()
+    try:
+        user_id = _get_user_id_from_schedule(db, "fanpage_schedules", schedule_id)
+        sch = crud.get_fanpage_schedule(db, schedule_id, user_id=user_id)
+        if not sch or not sch.active:
+            return
+        cfg = _lay_cau_hinh_hien_tai(db, user_id=user_id)
+        _sync_headless_from_db(cfg)
+        log = crud.create_log(db, "fanpage", schedule_id, user_id=user_id)
+
+        if getattr(sch, "content", None):
+            noi_dung_goc = sch.content.noi_dung
+            chu_de = None
+        elif getattr(sch, "topic", None):
+            chu_de = sch.topic.ten + (f" - {sch.topic.mo_ta}" if getattr(sch.topic, "mo_ta", None) else "")
+            noi_dung_goc = None
+        else:
+            crud.finish_log(db, log.id, "error", f"fanpage_schedule_id={schedule_id}: thiếu topic/content.")
+            return
+
+        thanh_cong, chi_tiet = thuc_thi_tien_trinh_dang_fanpage(
+            chu_de=chu_de,
+            noi_dung_goc=noi_dung_goc,
+            giu_nguyen_goc=getattr(sch, "giu_nguyen_goc", True),
+            fanpage_urls=[fp.url for fp in sch.fanpages],
+            dang_kem_anh=sch.dang_kem_anh,
+            thu_muc_anh=cfg.thu_muc_anh,
+            thoi_gian_cho_giua_cac_nhom=cfg.thoi_gian_cho_giua_cac_nhom,
         )
         crud.finish_log(db, log.id, "success" if thanh_cong else "error", chi_tiet)
     finally:
@@ -176,8 +223,166 @@ def dang_ky_job(loai: str, schedule_id: int, thu: str, gio: str):
         return
     gio_h, gio_m = gio_parts
     trigger = CronTrigger(day_of_week=ngay, hour=int(gio_h), minute=int(gio_m))
-    ham = {"dang_bai": job_dang_bai, "repost": job_repost, "tuong_tac": job_tuong_tac}[loai]
+    ham = {"dang_bai": job_dang_bai, "repost": job_repost, "tuong_tac": job_tuong_tac, "fanpage": job_fanpage}[loai]
     scheduler.add_job(ham, trigger=trigger, args=[schedule_id], id=_job_key(loai, schedule_id), replace_existing=True)
+
+
+def dang_ky_job_fanpage_v2(schedule_id: int, thu: str, gio: str):
+    """Đăng ký job đăng fanpage v2.
+    
+    thu có thể là:
+    - Tên thứ: "monday", "tuesday"... → chạy lặp lại hàng tuần
+    - Ngày cụ thể: "2026-07-10" → chạy 1 lần đúng ngày đó
+    """
+    go_job("fanpage_v2", schedule_id)
+    gio_parts = _normalize_time(gio)
+    if not gio_parts:
+        return
+    gio_h, gio_m = gio_parts
+
+    import re
+    if re.match(r'^\d{4}-\d{2}-\d{2}$', str(thu)):
+        # Ngày cụ thể — dùng CronTrigger với year/month/day
+        try:
+            from datetime import date
+            d = date.fromisoformat(thu)
+            trigger = CronTrigger(
+                year=d.year, month=d.month, day=d.day,
+                hour=gio_h, minute=gio_m
+            )
+        except ValueError:
+            return
+    else:
+        # Tên thứ — chạy hàng tuần
+        ngay = _normalize_day(thu)
+        if not ngay:
+            return
+        trigger = CronTrigger(day_of_week=ngay, hour=gio_h, minute=gio_m)
+
+    scheduler.add_job(
+        job_fanpage_v2, trigger=trigger, args=[schedule_id],
+        id=_job_key("fanpage_v2", schedule_id), replace_existing=True
+    )
+
+
+def job_fanpage_v2(schedule_id: int):
+    """Job đăng bài lên Fanpage v2 — dùng tài khoản FB liên kết."""
+    from app.mongo_db import get_collection
+    from app.bot.dang_bai import thuc_thi_tien_trinh_dang_fanpage
+
+    col = get_collection("fanpage_schedules_v2")
+    doc = col.find_one({"id": schedule_id})
+    if not doc or not doc.get("active"):
+        return
+
+    db = SessionLocal()
+    try:
+        user_id = doc.get("user_id")
+        cfg = _lay_cau_hinh_hien_tai(db, user_id=user_id)
+        _sync_headless_from_db(cfg)
+        log = crud.create_log(db, "fanpage_v2", schedule_id, user_id=user_id)
+
+        # Lấy URL fanpage từ tài khoản liên kết
+        acc_col = get_collection("fb_accounts")
+        acc = acc_col.find_one({"id": int(doc.get("fb_account_id", 0)), "user_id": user_id})
+        if not acc:
+            crud.finish_log(db, log.id, "error", "Không tìm thấy tài khoản Facebook")
+            return
+
+        page_ids = doc.get("page_ids") or []
+        fp_map = {fp["page_id"]: fp for fp in (acc.get("fanpages") or [])}
+        fanpage_urls = []
+        for pid in page_ids:
+            fp = fp_map.get(pid)
+            if fp:
+                raw_url = fp.get("url") or ""
+                # Chuẩn hóa URL: bỏ đường dẫn admin, chỉ lấy slug/id
+                # VD: facebook.com/bamoscafe24h.binhthanh (không phải trang admin)
+                clean = raw_url.split("?")[0].rstrip("/")
+                # Nếu URL chứa path admin (/pages_manager/, /pg/, ...) thì build lại từ page_id
+                admin_paths = ["/pages_manager", "/pg/", "?ref=bookmarks", "business.facebook"]
+                if any(p in clean for p in admin_paths) or not clean.startswith("http"):
+                    clean = f"https://www.facebook.com/{pid}"
+                fanpage_urls.append(clean)
+            else:
+                fanpage_urls.append(f"https://www.facebook.com/{pid}")
+
+        if not fanpage_urls:
+            crud.finish_log(db, log.id, "error", "Không có fanpage URL nào để đăng")
+            return
+
+        # Xác định nội dung
+        chu_de = None
+        noi_dung_goc = None
+        if doc.get("content_text"):
+            noi_dung_goc = doc["content_text"]
+        elif doc.get("topic_id"):
+            topics_col = get_collection("topics")
+            t = topics_col.find_one({"id": int(doc["topic_id"]), "user_id": user_id})
+            if t:
+                chu_de = t["ten"] + (f" - {t['mo_ta']}" if t.get("mo_ta") else "")
+            else:
+                crud.finish_log(db, log.id, "error", "Không tìm thấy chủ đề")
+                return
+        else:
+            crud.finish_log(db, log.id, "error", "Thiếu nội dung hoặc chủ đề")
+            return
+
+        # ── Ưu tiên Graph API nếu có page access token ──────────────
+        from app.bot.graph_api import dang_bai_graph_api
+
+        # Resolve nội dung cuối
+        if noi_dung_goc:
+            noi_dung_final = noi_dung_goc
+        else:
+            from app.bot.gemini import goi_gemini_viet_bai
+            noi_dung_final = goi_gemini_viet_bai(chu_de) if chu_de else None
+            if not noi_dung_final:
+                crud.finish_log(db, log.id, "error", "Gemini không viết được bài")
+                return
+
+        # Kiểm tra fanpages có token chưa
+        fp_map = {fp["page_id"]: fp for fp in (acc.get("fanpages") or [])}
+        ket_qua_list = []
+        co_token = any(fp_map.get(pid, {}).get("page_access_token") for pid in page_ids)
+
+        if co_token:
+            # Đăng qua Graph API — nhanh, không Chrome, không hiện giao diện
+            print(f"[job_fanpage_v2] Dung Graph API cho {len(page_ids)} fanpage")
+            for pid in page_ids:
+                fp = fp_map.get(pid, {})
+                token = fp.get("page_access_token")
+                if token:
+                    ok, detail = dang_bai_graph_api(pid, noi_dung_final, token)
+                    ket_qua_list.append(f"{fp.get('ten', pid)}: {'SUCCESS' if ok else detail}")
+                else:
+                    ket_qua_list.append(f"{fp.get('ten', pid)}: no_token_skip")
+            chi_tiet = "\n".join(ket_qua_list)
+            co_thanh_cong = any("SUCCESS" in r for r in ket_qua_list)
+        else:
+            # Fallback: Selenium (khi chưa có token)
+            print(f"[job_fanpage_v2] Khong co token, dung Selenium")
+            thanh_cong, chi_tiet = thuc_thi_tien_trinh_dang_fanpage(
+                chu_de=chu_de,
+                noi_dung_goc=noi_dung_goc,
+                giu_nguyen_goc=doc.get("giu_nguyen_goc", True),
+                fanpage_urls=fanpage_urls,
+                dang_kem_anh=doc.get("dang_kem_anh", False),
+                thu_muc_anh=cfg.thu_muc_anh,
+                thoi_gian_cho_giua_cac_nhom=cfg.thoi_gian_cho_giua_cac_nhom,
+            )
+            co_thanh_cong = thanh_cong and ("SUCCESS" in (chi_tiet or "") or "PENDING" in (chi_tiet or ""))
+        trang_thai_log = "success" if co_thanh_cong else "error"
+        crud.finish_log(db, log.id, trang_thai_log, chi_tiet)
+
+        # Nếu lịch chỉ chạy 1 lần (one_time=True) → tắt sau khi đăng xong
+        if co_thanh_cong and doc.get("one_time", False):
+            col.update_one({"id": schedule_id}, {"$set": {"active": False}})
+            go_job("fanpage_v2", schedule_id)
+            print(f"[job_fanpage_v2] one_time=True → đã tắt lịch #{schedule_id}")
+
+    finally:
+        db.close()
 
 
 def go_job(loai: str, schedule_id: int):
@@ -208,6 +413,12 @@ def nap_lai_toan_bo_lich():
                     dang_ky_job("tuong_tac", sch.id, sch.thu, sch.gio)
                 except Exception:
                     pass
+        for sch in crud.list_fanpage_schedules(None):
+            if getattr(sch, "active", True):
+                try:
+                    dang_ky_job("fanpage", sch.id, sch.thu, sch.gio)
+                except Exception:
+                    pass
         return
 
     db = SessionLocal()
@@ -225,6 +436,11 @@ def nap_lai_toan_bo_lich():
         for sch in db.query(models.InteractSchedule).filter(models.InteractSchedule.active.is_(True)).all():
             try:
                 dang_ky_job("tuong_tac", sch.id, sch.thu, sch.gio)
+            except Exception:
+                pass
+        for sch in db.query(models.FanpageSchedule).filter(models.FanpageSchedule.active.is_(True)).all():
+            try:
+                dang_ky_job("fanpage", sch.id, sch.thu, sch.gio)
             except Exception:
                 pass
     finally:

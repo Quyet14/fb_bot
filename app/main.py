@@ -11,6 +11,8 @@ from app.config import settings
 from app.scheduler import scheduler, nap_lai_toan_bo_lich
 from app.routers import groups, topics, schedules, actions, logs, setting as settings_router, user_contents as user_contents_router
 from app.routers.auth import router as auth_router
+from app.routers.fanpage_schedules import router as fanpage_schedules_router
+from app.routers.fb_accounts import router as fb_accounts_router
 
 
 if settings.USE_MONGODB:
@@ -34,6 +36,8 @@ app.include_router(auth_router)
 app.include_router(groups.router)
 app.include_router(topics.router)
 app.include_router(schedules.router)
+app.include_router(fanpage_schedules_router)
+app.include_router(fb_accounts_router)
 app.include_router(actions.router)
 app.include_router(logs.router)
 app.include_router(settings_router.router)

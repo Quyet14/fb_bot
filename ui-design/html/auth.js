@@ -144,7 +144,7 @@ const Auth = {
     const token = this.getAccessToken();
     if (!token) {
       this._redirectToLogin();
-      return;
+      return false;
     }
     try {
       const base = await this._findApiBase();
@@ -156,26 +156,27 @@ const Auth = {
       if (res.ok) {
         const user = await res.json();
         this.setTokens(token, this.getRefreshToken(), user);
-        return; // OK — cho phép trang render
+        return true; // OK — cho phép trang render
       }
 
       if (res.status === 401) {
         // Thử silent refresh
         const refreshed = await this.refreshAccessToken();
-        if (refreshed) {
-          return;
-        }
+        if (refreshed) return true;
         this.clearTokens();
         this._redirectToLogin();
-        return;
+        return false;
       }
 
       // Lỗi khác (403, 500...) — vẫn cho phép nếu có token
+      return true;
     } catch (_) {
-      // Backend không khả dụng — không redirect, hiển thị cảnh báo
+      // Backend không khả dụng — cho phép nếu token tồn tại (offline mode)
+      console.warn('[Auth] guardPage: không thể kết nối backend, cho qua với token hiện có.');
       if (typeof showToast === 'function') {
         showToast('warning', 'Không thể kết nối backend', 'Một số tính năng có thể không hoạt động.');
       }
+      return true;
     }
   },
 

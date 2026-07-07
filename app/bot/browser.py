@@ -24,23 +24,23 @@ def dong_chrome():
 def tao_driver(headless: bool = False):
     options = webdriver.ChromeOptions()
     options.add_argument("--user-data-dir=C:/fb_session")
-    options.add_argument("--start-maximized")
     options.add_argument("--no-first-run")
     options.add_argument("--no-default-browser-check")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
 
     if headless:
-        # Dùng --headless=new (Chrome 112+) thay vì --headless cũ
-        # Vẫn có thể bị Facebook detect — nếu bị block thì dùng window-position ẩn
-        options.add_argument("--headless=new")
-        options.add_argument("--disable-gpu")
+        # Ẩn Chrome bằng cách đẩy ra ngoài màn hình (không headless thật)
+        # headless=new làm React/JS không render đủ trên một số trang
+        options.add_argument("--window-position=-32000,-32000")
         options.add_argument("--window-size=1920,1080")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option("useAutomationExtension", False)
+        options.add_argument("--disable-extensions")
+        options.add_argument("--log-level=3")
+        options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
     else:
-        # Background mode: chạy ẩn màn hình (không headless) —
-        # an toàn hơn với Facebook vì render như browser thật
-        options.add_argument("--window-position=-32000,-32000")  # đẩy ra ngoài màn hình
+        # Hiển thị hoàn toàn — cho sync fanpage (cần xử lý 2FA)
+        options.add_argument("--start-maximized")
 
     driver = webdriver.Chrome(
         service=ChromeService(ChromeDriverManager().install()),

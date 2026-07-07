@@ -9,122 +9,136 @@ from app.mongo_crud_adapter import store
 
 if settings.USE_MONGODB:
     # Mongo adapter: giữ đúng contract của router/crud.
-    def list_groups(db):
-        return store.list_groups()
+    def list_groups(db, user_id=None):
+        return store.list_groups(user_id=user_id)
 
-    def get_group(db, group_id: int):
-        return store.get_group(group_id)
+    def get_group(db, group_id: int, user_id=None):
+        return store.get_group(group_id, user_id=user_id)
 
-    def get_groups_by_ids(db, ids: List[int]):
-        return store.get_groups_by_ids(ids)
+    def get_groups_by_ids(db, ids: List[int], user_id=None):
+        return store.get_groups_by_ids(ids, user_id=user_id)
 
-    def create_group(db, data: schemas.GroupCreate):
-        return store.create_group(data)
+    def create_group(db, data: schemas.GroupCreate, user_id=None):
+        return store.create_group(data, user_id=user_id)
 
-    def update_group(db, group_id: int, data: schemas.GroupUpdate):
-        return store.update_group(group_id, data)
+    def update_group(db, group_id: int, data: schemas.GroupUpdate, user_id=None):
+        return store.update_group(group_id, data, user_id=user_id)
 
-    def delete_group(db, group_id: int):
-        return store.delete_group(group_id)
+    def delete_group(db, group_id: int, user_id=None):
+        return store.delete_group(group_id, user_id=user_id)
 
-    def list_topics(db):
-        return store.list_topics()
+    def list_topics(db, user_id=None):
+        return store.list_topics(user_id=user_id)
 
     # user_contents (Mongo)
-    # Implement tối thiểu để UI tạo lịch theo nội dung người dùng.
-    def list_user_contents(db):
-        return store.list_user_contents()
+    def list_user_contents(db, user_id=None):
+        return store.list_user_contents(user_id=user_id)
 
-    def get_user_content(db, content_id: int):
-        return store.get_user_content(content_id)
+    def get_user_content(db, content_id: int, user_id=None):
+        return store.get_user_content(content_id, user_id=user_id)
 
-    def create_user_content(db, data: schemas.UserContentCreate):
-        return store.create_user_content(data)
+    def create_user_content(db, data: schemas.UserContentCreate, user_id=None):
+        return store.create_user_content(data, user_id=user_id)
 
-    def delete_user_content(db, content_id: int):
-        return store.delete_user_content(content_id)
+    def delete_user_content(db, content_id: int, user_id=None):
+        return store.delete_user_content(content_id, user_id=user_id)
 
+    def get_topic(db, topic_id: int, user_id=None):
+        return store.get_topic(topic_id, user_id=user_id)
 
+    def create_topic(db, data: schemas.TopicCreate, user_id=None):
+        return store.create_topic(data, user_id=user_id)
 
-    def get_topic(db, topic_id: int):
-        return store.get_topic(topic_id)
+    def update_topic(db, topic_id: int, data: schemas.TopicUpdate, user_id=None):
+        return store.update_topic(topic_id, data, user_id=user_id)
 
-    def create_topic(db, data: schemas.TopicCreate):
-        return store.create_topic(data)
+    def delete_topic(db, topic_id: int, user_id=None):
+        return store.delete_topic(topic_id, user_id=user_id)
 
-    def update_topic(db, topic_id: int, data: schemas.TopicUpdate):
-        return store.update_topic(topic_id, data)
+    def list_post_schedules(db, user_id=None):
+        return store.list_post_schedules(user_id=user_id)
 
-    def delete_topic(db, topic_id: int):
-        return store.delete_topic(topic_id)
+    def get_post_schedule(db, schedule_id: int, user_id=None):
+        return store.get_post_schedule(schedule_id, user_id=user_id)
 
-    def list_post_schedules(db):
-        return store.list_post_schedules()
+    def create_post_schedule(db, data: schemas.PostScheduleCreate, user_id=None):
+        return store.create_post_schedule(data, user_id=user_id)
 
-    def get_post_schedule(db, schedule_id: int):
-        return store.get_post_schedule(schedule_id)
+    def update_post_schedule(db, schedule_id: int, data: schemas.PostScheduleUpdate, user_id=None):
+        return store.update_post_schedule(schedule_id, data, user_id=user_id)
 
-    def create_post_schedule(db, data: schemas.PostScheduleCreate):
-        obj = store.create_post_schedule(data)
-        # debug-guard: nếu content_id được tạo mà không set được quan hệ, vẫn trả về obj
-        return obj
+    def delete_post_schedule(db, schedule_id: int, user_id=None):
+        return store.delete_post_schedule(schedule_id, user_id=user_id)
 
-    def update_post_schedule(db, schedule_id: int, data: schemas.PostScheduleUpdate):
-        return store.update_post_schedule(schedule_id, data)
+    def list_repost_schedules(db, user_id=None):
+        return store.list_repost_schedules(user_id=user_id)
 
-    def delete_post_schedule(db, schedule_id: int):
-        return store.delete_post_schedule(schedule_id)
+    def get_repost_schedule(db, schedule_id: int, user_id=None):
+        return store.get_repost_schedule(schedule_id, user_id=user_id)
 
-    def list_repost_schedules(db):
-        return store.list_repost_schedules()
+    def create_repost_schedule(db, data: schemas.RepostScheduleCreate, user_id=None):
+        return store.create_repost_schedule(data, user_id=user_id)
 
-    def get_repost_schedule(db, schedule_id: int):
-        return store.get_repost_schedule(schedule_id)
+    def update_repost_schedule(db, schedule_id: int, data: schemas.RepostScheduleUpdate, user_id=None):
+        return store.update_repost_schedule(schedule_id, data, user_id=user_id)
 
-    def create_repost_schedule(db, data: schemas.RepostScheduleCreate):
-        return store.create_repost_schedule(data)
+    def delete_repost_schedule(db, schedule_id: int, user_id=None):
+        return store.delete_repost_schedule(schedule_id, user_id=user_id)
 
-    def update_repost_schedule(db, schedule_id: int, data: schemas.RepostScheduleUpdate):
-        return store.update_repost_schedule(schedule_id, data)
+    def list_interact_schedules(db, user_id=None):
+        return store.list_interact_schedules(user_id=user_id)
 
-    def delete_repost_schedule(db, schedule_id: int):
-        return store.delete_repost_schedule(schedule_id)
+    def get_interact_schedule(db, schedule_id: int, user_id=None):
+        return store.get_interact_schedule(schedule_id, user_id=user_id)
 
-    def list_interact_schedules(db):
-        return store.list_interact_schedules()
+    def create_interact_schedule(db, data: schemas.InteractScheduleCreate, user_id=None):
+        return store.create_interact_schedule(data, user_id=user_id)
 
-    def get_interact_schedule(db, schedule_id: int):
-        return store.get_interact_schedule(schedule_id)
+    def update_interact_schedule(db, schedule_id: int, data: schemas.InteractScheduleUpdate, user_id=None):
+        return store.update_interact_schedule(schedule_id, data, user_id=user_id)
 
-    def create_interact_schedule(db, data: schemas.InteractScheduleCreate):
-        return store.create_interact_schedule(data)
+    def delete_interact_schedule(db, schedule_id: int, user_id=None):
+        return store.delete_interact_schedule(schedule_id, user_id=user_id)
 
-    def update_interact_schedule(db, schedule_id: int, data: schemas.InteractScheduleUpdate):
-        return store.update_interact_schedule(schedule_id, data)
+    # ── Fanpage schedules ──────────────────────────────────────
+    def list_fanpage_schedules(db, user_id=None):
+        return store.list_fanpage_schedules(user_id=user_id)
 
-    def delete_interact_schedule(db, schedule_id: int):
-        return store.delete_interact_schedule(schedule_id)
+    def get_fanpage_schedule(db, schedule_id: int, user_id=None):
+        return store.get_fanpage_schedule(schedule_id, user_id=user_id)
 
-    def create_log(db, loai: str, schedule_id: Optional[int] = None):
-        return store.create_log(loai, schedule_id)
+    def create_fanpage_schedule(db, data: schemas.FanpageScheduleCreate, user_id=None):
+        return store.create_fanpage_schedule(data, user_id=user_id)
+
+    def update_fanpage_schedule(db, schedule_id: int, data: schemas.FanpageScheduleUpdate, user_id=None):
+        return store.update_fanpage_schedule(schedule_id, data, user_id=user_id)
+
+    def delete_fanpage_schedule(db, schedule_id: int, user_id=None):
+        return store.delete_fanpage_schedule(schedule_id, user_id=user_id)
+
+    def list_fanpages(db, user_id=None):
+        return store.list_fanpages(user_id=user_id)
+
+    def create_log(db, loai: str, schedule_id: Optional[int] = None, user_id: Optional[str] = None):
+        return store.create_log(loai, schedule_id, user_id=user_id)
 
     def finish_log(db, log_id: int, trang_thai: str, chi_tiet: Optional[str] = None):
         return store.finish_log(log_id, trang_thai, chi_tiet)
 
-    def list_logs(db, limit: int = 100):
-        return store.list_logs(limit)
+    def list_logs(db, limit: int = 100, user_id: Optional[str] = None):
+        return store.list_logs(limit, user_id=user_id)
 
-    def get_log(db, log_id: int):
-        return store.get_log(log_id)
+    def get_log(db, log_id: int, user_id: Optional[str] = None):
+        return store.get_log(log_id, user_id=user_id)
 
-    def get_settings(db) -> Optional[schemas.AppSettingsOut]:
-        return store.get_settings()
+    def get_settings(db, user_id: Optional[str] = None):
+        return store.get_settings(user_id=user_id)
 
-    def ensure_settings(db, mac_dinh: dict):
-        return store.ensure_settings(mac_dinh)
+    def ensure_settings(db, mac_dinh: dict, user_id: Optional[str] = None):
+        return store.ensure_settings(mac_dinh, user_id=user_id)
 
-    def update_settings(db, data):
-        return store.update_settings(data)
+    def update_settings(db, data, user_id: Optional[str] = None):
+        return store.update_settings(data, user_id=user_id)
 else:
 
     import datetime
@@ -312,6 +326,49 @@ else:
         db.delete(obj)
         db.commit()
         return True
+
+    def list_fanpage_schedules(db: Session):
+        return db.query(models.FanpageSchedule).order_by(models.FanpageSchedule.id).all()
+
+    def get_fanpage_schedule(db: Session, schedule_id: int):
+        return db.query(models.FanpageSchedule).filter(models.FanpageSchedule.id == schedule_id).first()
+
+    def create_fanpage_schedule(db: Session, data: schemas.FanpageScheduleCreate):
+        fanpages = get_groups_by_ids(db, data.fanpage_ids)
+        obj = models.FanpageSchedule(
+            thu=data.thu, gio=data.gio, topic_id=data.topic_id,
+            content_id=data.content_id, giu_nguyen_goc=data.giu_nguyen_goc,
+            dang_kem_anh=data.dang_kem_anh, active=data.active,
+            fanpages=fanpages,
+        )
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
+        return obj
+
+    def update_fanpage_schedule(db: Session, schedule_id: int, data: schemas.FanpageScheduleUpdate):
+        obj = get_fanpage_schedule(db, schedule_id)
+        if not obj:
+            return None
+        payload = data.model_dump(exclude_unset=True)
+        if "fanpage_ids" in payload:
+            obj.fanpages = get_groups_by_ids(db, payload.pop("fanpage_ids"))
+        for k, v in payload.items():
+            setattr(obj, k, v)
+        db.commit()
+        db.refresh(obj)
+        return obj
+
+    def delete_fanpage_schedule(db: Session, schedule_id: int):
+        obj = get_fanpage_schedule(db, schedule_id)
+        if not obj:
+            return False
+        db.delete(obj)
+        db.commit()
+        return True
+
+    def list_fanpages(db: Session):
+        return db.query(models.Group).filter(models.Group.loai == "fanpage").order_by(models.Group.id).all()
 
     def create_log(db: Session, loai: str, schedule_id: Optional[int] = None) -> models.ActivityLog:
         log = models.ActivityLog(loai=loai, schedule_id=schedule_id, trang_thai="running")

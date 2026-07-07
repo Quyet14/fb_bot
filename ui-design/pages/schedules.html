@@ -12,10 +12,10 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="../html/css/tokens.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/base.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/components.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/responsive.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/tokens.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/base.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/components.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/responsive.css?v=202507080001" />
     <style>
       /* ── Schedule type tab bar ── */
       .type-tabs {
@@ -88,6 +88,33 @@
       }
       .panel-head h3 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
+      /* ── Panel card ── */
+      .panel-card {
+        background: var(--glass);
+        backdrop-filter: blur(var(--blur));
+        -webkit-backdrop-filter: blur(var(--blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        overflow: hidden; box-shadow: var(--shadow);
+        animation: surfaceIn 0.45s var(--ease) backwards;
+        animation-delay: 0.1s;
+        margin-bottom: 24px;
+      }
+      .panel-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px 14px; border-bottom: 1px solid var(--border-soft);
+        background: linear-gradient(90deg, var(--bg-soft), transparent);
+      }
+      .panel-head h3 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+      .view-toggle { display: flex; gap: 4px; }
+      .view-btn {
+        padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+        border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted);
+        cursor: pointer; transition: all .15s;
+      }
+      .view-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
       /* ── Modal ── */
       .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); z-index:5000; align-items:center; justify-content:center; }
       .modal-overlay.open { display:flex; }
@@ -125,8 +152,9 @@
           <nav>
             <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
             <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
-            <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ đề</span></a>
-            <a href="schedules.html" class="nav-schedules active"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch đăng</span></a>
+            <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
+            <a href="schedules.html" class="nav-schedules active"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
+            <a href="fanpage-schedules.html" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
             <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
           </nav>
           <div class="sidebar-status">
@@ -156,7 +184,7 @@
           </div>
         </header>
 
-        <!-- Stats -->
+        <!-- Stat bar -->
         <div class="page-stat-bar">
           <div class="mini-stat">
             <div class="mini-stat-icon">📝</div>
@@ -238,8 +266,7 @@
               </div>
             </div>
 
-            <!-- Repost fields -->
-            <div id="scheduleRepostFields" style="display:none;">
+            <!-- Repost fields -->            <div id="scheduleRepostFields" style="display:none;">
               <div class="field-grid" style="margin-bottom:14px;">
                 <label class="field"><span>Số bài repost</span><input id="scheduleSoBai" type="number" min="1" value="1" /></label>
                 <label class="field"><span>Nhóm nguồn (ID)</span><input id="scheduleNhomNguonIds" placeholder="1, 2" /></label>
@@ -262,13 +289,37 @@
         </div>
 
         <!-- Danh sách lịch -->
-        <div id="schedulesRoot" class="grid"></div>
+        <div class="panel-card">
+          <div class="panel-head">
+            <h3><span>📋</span> Danh sách lịch</h3>
+            <div class="view-toggle">
+              <button class="view-btn active" id="viewCardSchedules" onclick="setSchedulesView('card')">⊞ Thẻ</button>
+              <button class="view-btn" id="viewTableSchedules" onclick="setSchedulesView('table')">☰ Bảng</button>
+            </div>
+          </div>
+          
+          <!-- Card view (default) -->
+          <div id="schedulesCardView">
+            <div id="schedulesRoot" class="grid"></div>
+          </div>
+          
+          <!-- Table view (hidden by default) -->
+          <div id="schedulesTableView" style="display:none; padding: 16px;">
+            <div style="margin-bottom:16px;"><strong style="font-size:13px;">📝 Lịch đăng bài</strong></div>
+            <table id="postsTable"><thead><tr><th>Thứ</th><th>Giờ</th><th>Chủ đề</th><th>Nhóm</th><th style="width:120px;"></th></tr></thead><tbody></tbody></table>
+            
+            <div style="margin:24px 0 16px;"><strong style="font-size:13px;">🔁 Lịch repost</strong></div>
+            <table id="repostsTable"><thead><tr><th>Thứ</th><th>Giờ</th><th>Nguồn</th><th>Đích</th><th style="width:120px;"></th></tr></thead><tbody></tbody></table>
+            
+            <div style="margin:24px 0 16px;"><strong style="font-size:13px;">💬 Lịch tương tác</strong></div>
+            <table id="interactsTable"><thead><tr><th>Thứ</th><th>Giờ</th><th>Nhóm</th><th style="width:120px;"></th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
       </main>
     </div>
 
     <!-- Modal Sửa lịch đăng bài -->
-    <div id="editPostModal" class="modal-overlay">
-      <div class="modal-box">
+    <div id="editPostModal" class="modal-overlay">      <div class="modal-box">
         <h3><span>✏️</span> Sửa lịch đăng bài</h3>
         <div class="field-grid field-grid-2">
           <label class="field"><span>Thứ</span><input id="editThu" placeholder="Thứ 7" /></label>
@@ -303,6 +354,7 @@
 
     <script src="../html/theme.js" defer></script>
     <script src="../html/i18n.js" defer></script>
+    <script src="../html/auth.js"></script>
     <script src="../html/api.js" defer></script>
     <script src="../html/app.js" defer></script>
     <script src="../html/script.js" defer></script>
@@ -339,6 +391,9 @@
         document.getElementById('scheduleType').value = type;
         document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
+        document.getElementById('schedulePostFields').style.display = (type === 'dang-bai') ? '' : 'none';
+        document.getElementById('scheduleRepostFields').style.display = (type === 'repost') ? '' : 'none';
+        document.getElementById('scheduleInteractFields').style.display = (type === 'tuong-tac') ? '' : 'none';
         window.updateScheduleFormFields?.();
       }
 
@@ -368,8 +423,88 @@
       }
       document.addEventListener('DOMContentLoaded', () => {
         const orig = window.renderSchedules;
-        window.renderSchedules = function() { orig?.(); updateScheduleStats(); };
+        window.renderSchedules = function() {
+          orig?.();
+          updateScheduleStats();
+          _renderScheduleTable();
+        };
       });
+
+      // ── View toggle cho schedules ──
+      let _schedViewMode = 'card';
+      function setSchedulesView(v) {
+        _schedViewMode = v;
+        document.getElementById('schedulesCardView').style.display = v === 'card' ? '' : 'none';
+        document.getElementById('schedulesTableView').style.display = v === 'table' ? '' : 'none';
+        document.getElementById('viewCardSchedules').classList.toggle('active', v === 'card');
+        document.getElementById('viewTableSchedules').classList.toggle('active', v === 'table');
+        if (v === 'table') _renderScheduleTable();
+      }
+
+      function _renderScheduleTable() {
+        const s = window.state?.schedules;
+        if (!s) return;
+
+        // Posts table
+        const postsTb = document.querySelector('#postsTable tbody');
+        if (postsTb) {
+          if (!s.posts?.length) {
+            postsTb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-faint);padding:16px;">Chưa có lịch đăng bài.</td></tr>';
+          } else {
+            postsTb.innerHTML = s.posts.map(p => `
+              <tr>
+                <td>${escapeHtml(p.thu)}</td>
+                <td style="font-family:var(--font-mono)">${escapeHtml(p.gio)}</td>
+                <td>${escapeHtml(p.topic?.ten || p.content_text?.substring(0,40) || '—')}</td>
+                <td style="font-size:12px;color:var(--text-muted)">${(p.groups||[]).map(g=>escapeHtml(g.ten)).join(', ')||'—'}</td>
+                <td>
+                  <button data-action="edit-post" data-id="${p.id}" style="font-size:11px;padding:4px 8px;margin-right:4px;border:1px solid var(--border);background:var(--surface-2);border-radius:6px;cursor:pointer;">✏️</button>
+                  <button data-action="delete-post" data-id="${p.id}" style="font-size:11px;padding:4px 8px;border:1px solid transparent;background:transparent;color:var(--danger);border-radius:6px;cursor:pointer;">🗑</button>
+                </td>
+              </tr>`).join('');
+            postsTb.addEventListener('click', window.handleEditOrDelete);
+          }
+        }
+
+        // Reposts table
+        const repostsTb = document.querySelector('#repostsTable tbody');
+        if (repostsTb) {
+          if (!s.reposts?.length) {
+            repostsTb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-faint);padding:16px;">Chưa có lịch repost.</td></tr>';
+          } else {
+            repostsTb.innerHTML = s.reposts.map(r => `
+              <tr>
+                <td>${escapeHtml(r.thu)}</td>
+                <td style="font-family:var(--font-mono)">${escapeHtml(r.gio)}</td>
+                <td style="font-size:12px;color:var(--text-muted)">${(r.nhom_nguon||[]).map(g=>escapeHtml(g.ten)).join(', ')||'—'}</td>
+                <td style="font-size:12px;color:var(--text-muted)">${(r.nhom_dich||[]).map(g=>escapeHtml(g.ten)).join(', ')||'—'}</td>
+                <td>
+                  <button data-action="delete-repost" data-id="${r.id}" style="font-size:11px;padding:4px 8px;border:1px solid transparent;background:transparent;color:var(--danger);border-radius:6px;cursor:pointer;">🗑</button>
+                </td>
+              </tr>`).join('');
+          }
+        }
+
+        // Interacts table
+        const interactsTb = document.querySelector('#interactsTable tbody');
+        if (interactsTb) {
+          if (!s.interacts?.length) {
+            interactsTb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-faint);padding:16px;">Chưa có lịch tương tác.</td></tr>';
+          } else {
+            interactsTb.innerHTML = s.interacts.map(it => `
+              <tr>
+                <td>${escapeHtml(it.thu)}</td>
+                <td style="font-family:var(--font-mono)">${escapeHtml(it.gio)}</td>
+                <td style="font-size:12px;color:var(--text-muted)">${(it.groups||[]).map(g=>escapeHtml(g.ten)).join(', ')||'—'}</td>
+                <td>
+                  <button data-action="delete-interact" data-id="${it.id}" style="font-size:11px;padding:4px 8px;border:1px solid transparent;background:transparent;color:var(--danger);border-radius:6px;cursor:pointer;">🗑</button>
+                </td>
+              </tr>`).join('');
+          }
+        }
+      }
+
+      function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     </script>
   </body>
 </html>

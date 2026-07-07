@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lịch đăng Fanpage · FB Bot Console</title>
+    <script>
+      (function(){try{var t=localStorage.getItem('fbbot-theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){}})();
+    </script>
+    <link rel="stylesheet" href="../html/css/tokens.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/base.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/components.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/responsive.css?v=202507080001" />
+    <style>
+      /* ── Fanpage page accent — dùng màu hồng sáng ── */
+      :root {
+        --c-fanpage: #f472b6;
+        --c-fanpage-soft: rgba(244, 114, 182, 0.15);  /* sáng hơn, không tối như cũ */
+      }
+
+      .page-stat-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+      .mini-stat{background:var(--glass);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);}
+      .mini-stat-icon{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:var(--c-fanpage-soft);color:var(--c-fanpage);}
+      .mini-stat-body .val{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--text);}
+      .mini-stat-body .lbl{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+
+      /* Section cards */
+      .section-card{background:var(--glass);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));border:1px solid var(--glass-border);border-radius:var(--radius);padding:0;margin-bottom:20px;box-shadow:var(--shadow);}
+      .section-head{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:1px solid var(--border-soft);background:linear-gradient(90deg,var(--bg-soft),transparent);}
+      .section-head h3{margin:0;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
+      .section-body{padding:18px 20px;}
+
+      /* Account card */
+      .account-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+      .account-card{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:14px 16px;position:relative;}
+      .account-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--c-fanpage),transparent);border-radius:var(--radius-sm) var(--radius-sm) 0 0;}
+      .account-name{font-weight:700;font-size:14px;margin-bottom:3px;}
+      .account-email{font-size:12px;color:var(--text-faint);font-family:var(--font-mono);}
+      .account-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:var(--radius-pill);margin-top:8px;}
+      .status-linked{background:var(--c-schedules-soft);color:var(--c-schedules);}
+      .status-unlinked{background:var(--surface);color:var(--text-muted);}
+      .status-syncing{background:var(--c-topics-soft);color:var(--c-topics);}
+      .status-error{background:var(--c-logs-soft);color:var(--c-logs);}
+      .account-actions{display:flex;gap:6px;margin-top:10px;}
+      .fp-list{margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;}
+
+      /* Chip fanpage — màu sáng, dễ đọc */
+      .fp-chip{font-size:11.5px;padding:4px 11px;border-radius:var(--radius-pill);background:rgba(244,114,182,0.15);color:#f472b6;font-weight:700;border:1px solid rgba(244,114,182,0.35);}
+
+      /* Fanpage selector in form */
+      .fp-selector{display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:var(--bg-soft);border-radius:var(--radius-sm);border:1px solid var(--border);min-height:50px;margin-top:6px;}
+      .fp-sel-chip{font-size:12.5px;padding:6px 14px;border-radius:var(--radius-pill);background:rgba(244,114,182,0.12);color:#f472b6;font-weight:700;border:1.5px solid rgba(244,114,182,0.3);cursor:pointer;transition:all .15s;opacity:.7;}
+      .fp-sel-chip.selected{opacity:1;border-color:#f472b6;background:rgba(244,114,182,0.22);box-shadow:0 0 10px -3px rgba(244,114,182,0.4);}
+
+      /* Schedule cards */
+      .sched-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px;padding:16px;}
+      .sched-card{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:16px 18px;display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden;transition:transform .2s var(--ease),box-shadow .2s,border-color .2s;}
+      .sched-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#f472b6,transparent);}
+      .sched-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lift);border-color:#f472b6;}
+      .sched-time{font-family:var(--font-mono);font-size:20px;font-weight:700;color:#f472b6;}
+      .sched-day{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+      .sched-content{font-size:12.5px;color:var(--text-muted);background:var(--bg-soft);border-radius:8px;padding:7px 10px;}
+      .sched-meta{display:flex;flex-wrap:wrap;gap:5px;}
+      .sched-actions{display:flex;gap:7px;margin-top:3px;}
+
+      /* Modal */
+      .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(5px);z-index:5000;align-items:center;justify-content:center;}
+      .modal-overlay.open{display:flex;}
+      .modal-box{background:var(--glass-strong);backdrop-filter:blur(var(--blur-lg));border:1px solid var(--glass-border);border-radius:var(--radius);padding:28px 28px 24px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.55);animation:modalIn .25s cubic-bezier(.34,1.56,.64,1);}
+      @keyframes modalIn{from{opacity:0;transform:scale(.92) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+      .modal-box h3{margin:0 0 20px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;}
+      .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
+
+      .empty-state{text-align:center;padding:40px 24px;color:var(--text-faint);}
+      .empty-icon{font-size:40px;margin-bottom:12px;opacity:.5;}
+
+      /* View toggle */
+      .view-toggle { display: flex; gap: 4px; }
+      .view-btn {
+        padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+        border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted);
+        cursor: pointer; transition: all .15s;
+      }
+      .view-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+      /* Mode tab */
+      .mode-tabs{display:flex;gap:6px;background:var(--surface-2);border-radius:var(--radius-pill);padding:4px;width:fit-content;border:1px solid var(--border-soft);margin-bottom:14px;}
+      .mode-tab{padding:7px 14px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:all .2s var(--ease);}
+      .mode-tab.active{background:var(--glass);color:var(--text);box-shadow:0 2px 8px -4px rgba(0,0,0,.3);border:1px solid var(--glass-border);}
+    </style>
+  </head>
+  <body class="page-fanpage-schedules">
+    <header class="global-bar">
+      <div class="global-bar-left">
+        <a href="../html/dashboard.html" class="global-bar-logo">
+          <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
+          <span class="global-bar-logo-text">FB Bot Console</span>
+        </a>
+        <div class="global-bar-sep"></div>
+        <div class="global-status-dot"><span class="dot dot-success"></span><span class="global-status-label">Online</span></div>
+      </div>
+      <div class="global-bar-right">
+        <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
+        <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+      </div>
+    </header>
+
+    <div class="app">
+      <div class="sidebar-wrapper" id="sidebarWrapper">
+        <aside class="sidebar" id="sidebar">
+          <nav>
+            <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></a>
+            <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+            <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
+            <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
+            <a href="fanpage-schedules.html" class="nav-fanpage active"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
+            <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+          </nav>
+          <div class="sidebar-status">
+            <span class="dot dot-success"></span>
+            <div class="sidebar-status-text">
+              <span class="label">Bot đang chạy</span>
+              <span class="sub">v1.0.0 · API online</span>
+            </div>
+          </div>
+        </aside>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Thu gọn">
+          <svg viewBox="0 0 7 12"><polyline points="5,1 1,6 5,11"/></svg>
+        </button>
+      </div>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow"><span class="dot" style="background:var(--c-fanpage);"></span> Fanpage</span>
+            <h2>Lịch đăng Fanpage</h2>
+            <p class="sub">Liên kết tài khoản Facebook, chọn fanpage bạn quản lý và đặt lịch đăng tự động.</p>
+          </div>
+          <div class="topbar-hero-shapes" aria-hidden="true">
+            <div class="hero-shape">📄</div><div class="hero-shape">👤</div><div class="hero-shape">📅</div>
+          </div>
+        </header>
+
+        <!-- Stat bar -->
+        <div class="page-stat-bar">
+          <div class="mini-stat" style="animation-delay:.02s">
+            <div class="mini-stat-icon">👤</div>
+            <div class="mini-stat-body"><div class="val" id="statAccounts">—</div><div class="lbl">Tài khoản FB</div></div>
+          </div>
+          <div class="mini-stat" style="animation-delay:.06s">
+            <div class="mini-stat-icon">📄</div>
+            <div class="mini-stat-body"><div class="val" id="statFanpages">—</div><div class="lbl">Fanpage đã đồng bộ</div></div>
+          </div>
+          <div class="mini-stat" style="animation-delay:.10s">
+            <div class="mini-stat-icon">📅</div>
+            <div class="mini-stat-body"><div class="val" id="statSchedules">—</div><div class="lbl">Lịch đang chạy</div></div>
+          </div>
+        </div>
+
+        <div id="alertBox"></div>
+
+        <!-- ══ BƯỚC 1: Tài khoản Facebook ══ -->
+        <div class="section-card">
+          <div class="section-head">
+            <h3>👤 Bước 1 — Tài khoản Facebook</h3>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div class="view-toggle">
+                <button class="view-btn active" id="viewCardAcc" onclick="setAccountView('card')">⊞ Thẻ</button>
+                <button class="view-btn" id="viewTableAcc" onclick="setAccountView('table')">☰ Bảng</button>
+              </div>
+              <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="openAddAccount()">＋ Thêm tài khoản</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <p style="font-size:13px;color:var(--text-muted);margin:0 0 14px;">
+              Thêm tài khoản Facebook có quyền quản lý fanpage. Bot sẽ đăng nhập tài khoản đó để lấy danh sách fanpage.
+            </p>
+            
+            <!-- Card view -->
+            <div id="accountCardView">
+              <div id="accountGrid" class="account-grid">
+                <div class="empty-state"><div class="empty-icon">👤</div><p>Chưa có tài khoản nào.</p></div>
+              </div>
+            </div>
+            
+            <!-- Table view -->
+            <div id="accountTableView" style="display:none;">
+              <table id="accountsTable">
+                <thead><tr><th>Tên</th><th>Email/SĐT</th><th>Trạng thái</th><th>Fanpages</th><th style="width:200px;"></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ BƯỚC 2: Tạo lịch đăng ══ -->
+        <div class="section-card">
+          <div class="section-head">
+            <h3>📅 Bước 2 — Tạo lịch đăng Fanpage</h3>
+          </div>
+          <div class="section-body">
+            <form id="fpForm">
+              <!-- Chọn tài khoản -->
+              <div class="field-grid field-grid-2" style="margin-bottom:14px;">
+                <label class="field">
+                  <span>👤 Tài khoản Facebook</span>
+                  <select id="fpAccountId" onchange="onAccountChange()" required>
+                    <option value="">— Chọn tài khoản —</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>⏰ Giờ chạy</span>
+                  <input id="fpGio" type="time" required />
+                </label>
+              </div>
+
+              <label class="field" style="margin-bottom:14px;">
+                <span>📅 Ngày đăng bài</span>
+                <input id="fpThu" type="date" required style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:var(--text);font-size:13.5px;width:100%;" />
+              </label>
+
+              <!-- Chọn Fanpage -->
+              <div class="field" style="margin-bottom:14px;">
+                <span>📄 Chọn Fanpage <span style="color:var(--text-faint);font-size:11px;">(click để chọn/bỏ)</span></span>
+                <div id="fpFanpageSelector" class="fp-selector">
+                  <span style="color:var(--text-faint);font-size:12.5px;">Hãy chọn tài khoản Facebook trước, rồi đồng bộ fanpage.</span>
+                </div>
+              </div>
+
+              <!-- Nội dung -->
+              <div class="mode-tabs" role="tablist">
+                <button type="button" class="mode-tab active" onclick="switchMode('topic',this)">🏷️ Theo chủ đề</button>
+                <button type="button" class="mode-tab" onclick="switchMode('content',this)">📝 Tự soạn</button>
+              </div>
+              <input type="hidden" id="fpMode" value="topic" />
+
+              <div id="fpTopicSection" style="margin-bottom:14px;">
+                <label class="field">
+                  <span>🏷️ Chủ đề nội dung</span>
+                  <select id="fpTopicId"><option value="">Đang tải...</option></select>
+                </label>
+              </div>
+              <div id="fpContentSection" style="display:none;margin-bottom:14px;">
+                <label class="field">
+                  <span>📝 Nội dung bài đăng</span>
+                  <textarea id="fpContentText" rows="5" placeholder="Nhập nội dung bài đăng..."></textarea>
+                </label>
+                <label class="checkbox-inline" style="margin-top:8px;">
+                  <input id="fpGiuNguyen" type="checkbox" checked />
+                  <span>Giữ nguyên (không nhờ AI viết lại)</span>
+                </label>
+              </div>
+
+              <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:16px;">
+                <label class="checkbox-inline"><input id="fpDangKemAnh" type="checkbox" /><span>🖼 Đính kèm ảnh</span></label>
+                <input type="hidden" id="fpActive" value="true" />
+                <label class="checkbox-inline"><input id="fpOneTime" type="checkbox" /><span>🔂 Chỉ đăng 1 lần rồi tắt</span></label>
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;gap:10px;">
+                <button type="button" class="btn" onclick="resetForm()">↺ Đặt lại</button>
+                <button type="submit" class="btn btn-primary" id="fpSubmitBtn">📅 Tạo lịch</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- ══ DANH SÁCH LỊCH ══ -->
+        <div class="section-card">
+          <div class="section-head">
+            <h3>📋 Lịch đăng Fanpage <span id="schedBadge" class="badge badge-idle" style="margin-left:6px;font-size:11px;"></span></h3>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div class="view-toggle">
+                <button class="view-btn active" id="viewCardSched" onclick="setSchedView('card')">⊞ Thẻ</button>
+                <button class="view-btn" id="viewTableSched" onclick="setSchedView('table')">☰ Bảng</button>
+              </div>
+              <button class="btn" style="font-size:12px;padding:6px 12px;" onclick="loadSchedules()">↺ Làm mới</button>
+            </div>
+          </div>
+          
+          <!-- Card view -->
+          <div id="schedCardView">
+            <div id="schedGrid" class="sched-grid">
+              <div class="empty-state"><div class="empty-icon">📅</div><p>Đang tải...</p></div>
+            </div>
+          </div>
+          
+          <!-- Table view -->
+          <div id="schedTableView" style="display:none;">
+            <table id="fpSchedTable"><thead><tr><th>Thời gian</th><th>Fanpages</th><th>Nội dung</th><th>Trạng thái</th><th style="width:140px;"></th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Modal: Thêm fanpage thủ công -->
+    <div id="addManualModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3>➕ Thêm Fanpage thủ công</h3>
+        <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px;">
+          Nếu đồng bộ tự động không tìm được fanpage, hãy thêm thủ công bằng cách nhập URL và tên fanpage.
+        </p>
+        <input type="hidden" id="manualAccId" />
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <label class="field">
+            <span>Tên Fanpage</span>
+            <input id="manualName" placeholder="VD: Bamos Coffee & Tea - 130 Đường..." />
+          </label>
+          <label class="field">
+            <span>URL Fanpage</span>
+            <input id="manualUrl" placeholder="https://www.facebook.com/bamoscoffeetea" />
+          </label>
+        </div>
+        <div style="font-size:12px;color:var(--text-faint);margin-top:12px;padding:10px;background:var(--bg-soft);border-radius:8px;line-height:1.6;">
+          💡 Để lấy URL đúng: vào fanpage trên Facebook → copy URL trên thanh địa chỉ.<br/>
+          VD: <code style="font-size:11px;">facebook.com/bamoscoffee</code> hoặc <code style="font-size:11px;">facebook.com/pages/Ten/123456789</code>
+        </div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeModal('addManualModal')">Hủy</button>
+          <button class="btn btn-primary" onclick="submitAddManual()">➕ Thêm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Thêm tài khoản FB -->
+    <div id="addAccountModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3>👤 Thêm tài khoản Facebook</h3>
+        <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px;">
+          Nhập thông tin đăng nhập Facebook. Bot sẽ dùng tài khoản này để lấy danh sách fanpage bạn quản lý.
+          Dữ liệu chỉ lưu trên server của bạn.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <label class="field"><span>Tên hiển thị</span><input id="accName" placeholder="VD: Tài khoản chính, Page A..." /></label>
+          <label class="field"><span>Email hoặc SĐT đăng nhập FB</span><input id="accEmail" type="text" placeholder="example@email.com hoặc 09xxxxxxxx" /></label>
+          <label class="field"><span>Mật khẩu Facebook</span><input id="accPass" type="password" placeholder="Mật khẩu Facebook" /></label>
+          <div style="background:var(--bg-soft);border-radius:10px;padding:12px 14px;border:1px solid var(--border-soft);">
+            <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:6px;">⚡ User Access Token (tùy chọn — để đăng bài nhanh hơn)</div>
+            <label class="field" style="margin-bottom:8px;">
+              <input id="accToken" type="text" placeholder="Paste token từ developers.facebook.com/tools/explorer" style="font-size:12px;" />
+            </label>
+            <div style="font-size:11.5px;color:var(--text-faint);line-height:1.6;">
+              Để lấy token: vào <a href="https://developers.facebook.com/tools/explorer/" target="_blank" style="color:var(--accent);">Graph API Explorer</a>
+              → Generate Token → Cấp quyền <code>pages_manage_posts</code> + <code>pages_read_engagement</code> → Paste vào đây.<br/>
+              Nếu không nhập, bot sẽ dùng Selenium (chậm hơn).
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeModal('addAccountModal')">Hủy</button>
+          <button class="btn btn-primary" onclick="submitAddAccount()">➕ Thêm tài khoản</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Sửa lịch -->
+    <div id="editModal" class="modal-overlay">
+      <div class="modal-box" style="width:580px;">
+        <h3>✏️ Sửa lịch Fanpage</h3>
+        <input type="hidden" id="editId" />
+
+        <!-- Thời gian -->
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--text-muted);margin-bottom:8px;">⏰ Thời gian</div>
+        <div class="field-grid field-grid-2" style="margin-bottom:16px;">
+          <label class="field">
+            <span>📅 Ngày đăng</span>
+            <input id="editThu" type="date" style="padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:var(--text);font-size:13px;width:100%;" />
+          </label>
+          <label class="field"><span>⏰ Giờ</span><input id="editGio" type="time" /></label>
+        </div>
+
+        <!-- Nội dung -->
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--text-muted);margin-bottom:8px;">📝 Nội dung</div>
+        <div class="mode-tabs" role="tablist" style="margin-bottom:12px;">
+          <button type="button" class="mode-tab active" onclick="switchEditMode('topic',this)">🏷️ Theo chủ đề</button>
+          <button type="button" class="mode-tab" onclick="switchEditMode('content',this)">📝 Tự soạn</button>
+        </div>
+        <input type="hidden" id="editMode" value="topic" />
+        <div id="editTopicSection" style="margin-bottom:14px;">
+          <label class="field">
+            <span>🏷️ Chủ đề nội dung</span>
+            <select id="editTopicId"><option value="">Đang tải...</option></select>
+          </label>
+        </div>
+        <div id="editContentSection" style="display:none;margin-bottom:14px;">
+          <label class="field">
+            <span>📝 Nội dung bài đăng</span>
+            <textarea id="editContentText" rows="4" placeholder="Nhập nội dung bài đăng..."></textarea>
+          </label>
+        </div>
+
+        <!-- Tùy chọn -->
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--text-muted);margin-bottom:10px;">⚙️ Tùy chọn</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
+          <label class="checkbox-inline"><input id="editDangKemAnh" type="checkbox" /><span>🖼 Đính kèm ảnh</span></label>
+          <label class="checkbox-inline"><input id="editActive" type="checkbox" /><span>Kích hoạt</span></label>
+          <label class="checkbox-inline"><input id="editGiuNguyen" type="checkbox" /><span>🔒 Giữ nguyên gốc</span></label>
+          <label class="checkbox-inline"><input id="editOneTime" type="checkbox" /><span>🔂 Chỉ đăng 1 lần</span></label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn" onclick="closeModal('editModal')">Hủy</button>
+          <button class="btn btn-primary" onclick="submitEdit()">💾 Lưu thay đổi</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Sửa tài khoản FB -->
+    <div id="editAccountModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3>✏️ Sửa tài khoản Facebook</h3>
+        <input type="hidden" id="editAccId" />
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <label class="field"><span>Tên hiển thị</span><input id="editAccName" placeholder="VD: Tài khoản chính, Page A..." /></label>
+          <label class="field"><span>Email hoặc SĐT đăng nhập FB</span><input id="editAccEmail" type="text" placeholder="example@email.com hoặc 09xxxxxxxx" /></label>
+          <label class="field">
+            <span>Mật khẩu mới <span style="color:var(--text-faint);font-size:11px;">(để trống nếu không đổi)</span></span>
+            <input id="editAccPass" type="password" placeholder="Để trống nếu không thay đổi" />
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeModal('editAccountModal')">Hủy</button>
+          <button class="btn btn-primary" onclick="submitEditAccount()">💾 Lưu thay đổi</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+    <script src="../html/theme.js" defer></script>
+    <script src="../html/i18n.js" defer></script>
+    <script src="../html/auth.js"></script>
+    <script>
+      // ── Sidebar ──
+      const sw=document.getElementById('sidebarWrapper'),sb=document.getElementById('sidebar'),st=document.getElementById('sidebarToggle');
+      function applyCollapsed(c){sw?.classList.toggle('collapsed',c);sb?.classList.toggle('collapsed',c);const p=st?.querySelector('polyline');if(p)p.setAttribute('points',c?'1,1 5,6 1,11':'5,1 1,6 5,11');localStorage.setItem('fbbot-sidebar',c?'1':'0');}
+      applyCollapsed(localStorage.getItem('fbbot-sidebar')==='1');
+      st?.addEventListener('click',()=>applyCollapsed(!sw?.classList.contains('collapsed')));
+
+      // ── Utils ──
+      const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      function toast(type,title,msg){const c=document.getElementById('toastContainer');if(!c)return;const t=document.createElement('div');t.className=`toast toast-${type}`;t.innerHTML=`<strong>${esc(title)}</strong>${msg?`<div style="font-size:12px;margin-top:3px;">${esc(msg)}</div>`:''}`;c.appendChild(t);setTimeout(()=>t.remove(),4500);}
+      function closeModal(id){document.getElementById(id)?.classList.remove('open');}
+      const THU={monday:'Thứ Hai',tuesday:'Thứ Ba',wednesday:'Thứ Tư',thursday:'Thứ Năm',friday:'Thứ Sáu',saturday:'Thứ Bảy',sunday:'Chủ Nhật'};
+
+      // Format ngày YYYY-MM-DD → hiển thị đẹp
+      function formatDate(val) {
+        if (!val) return '—';
+        // Nếu là ngày cụ thể dạng YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+          const d = new Date(val + 'T00:00:00');
+          const days = ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+          return `${days[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+        }
+        // Nếu là tên thứ (monday...)
+        return THU[val] || val;
+      }
+
+      // ── API ──
+      let _base=null;
+      async function getBase(){if(_base)return _base;const h=window.location.hostname;const cs=[`http://${h}:8000`,`http://${h}:8005`];for(const b of cs){try{const r=await fetch(`${b}/`,{signal:AbortSignal.timeout(2000)});if(r.ok){_base=b;return b;}}catch(_){}}return _base=cs[0];}
+      async function api(method,path,body){const base=await getBase();const token=localStorage.getItem('fbbot-access-token');const h={'Content-Type':'application/json'};if(token)h['Authorization']=`Bearer ${token}`;const res=await fetch(`${base}${path}`,{method,headers:h,body:body?JSON.stringify(body):undefined});if(res.status===204)return null;const d=await res.json().catch(()=>({}));if(!res.ok)throw new Error(d.detail||res.statusText);return d;}
+
+      // ── State ──
+      let accounts=[],topics=[],schedules=[],selectedPageIds=new Set();
+
+      // ── Load all ──
+      async function loadAll(){await Promise.all([loadAccounts(),loadTopics(),loadSchedules()]);}
+
+      async function loadAccounts(){
+        try{
+          accounts=await api('GET','/fb-accounts/');
+          renderAccounts();
+          // Cập nhật dropdown chọn tài khoản trong form
+          const sel=document.getElementById('fpAccountId');
+          sel.innerHTML='<option value="">— Chọn tài khoản —</option>'+accounts.map(a=>`<option value="${a.id}">${esc(a.ten_hien_thi)} (${esc(a.email_or_phone)})</option>`).join('');
+          updateStats();
+        }catch(e){console.warn('loadAccounts:',e);}
+      }
+
+      const STATUS_LABEL={'chua_lien_ket':'Chưa đồng bộ','da_lien_ket':'Đã liên kết','da_lien_ket_0':'Đã liên kết (0 fanpage)','dang_sync':'Đang đồng bộ...','loi':'Lỗi đăng nhập'};
+      const STATUS_CSS={'chua_lien_ket':'status-unlinked','da_lien_ket':'status-linked','da_lien_ket_0':'status-linked','dang_sync':'status-syncing','loi':'status-error'};
+
+      function renderAccounts(){
+        const grid=document.getElementById('accountGrid');
+        if(!accounts.length){grid.innerHTML='<div class="empty-state"><div class="empty-icon">👤</div><p>Chưa có tài khoản nào. Nhấn <b>+ Thêm tài khoản</b> để bắt đầu.</p></div>';
+          _renderAccountsTable();
+          return;
+        }
+        grid.innerHTML=accounts.map(a=>`
+          <div class="account-card">
+            <div class="account-name">👤 ${esc(a.ten_hien_thi)}</div>
+            <div class="account-email">${esc(a.email_or_phone)}</div>
+            <span class="account-status ${STATUS_CSS[a.trang_thai]||'status-unlinked'}">
+              ${a.trang_thai==='da_lien_ket'?'<span class="dot dot-success" style="width:7px;height:7px;"></span>':''} ${STATUS_LABEL[a.trang_thai]||a.trang_thai}
+            </span>
+            ${a.trang_thai==='dang_sync'?'<div style="font-size:11.5px;color:var(--c-topics);margin-top:6px;padding:8px 10px;background:var(--c-topics-soft);border-radius:8px;line-height:1.5;">⚠️ Chrome đang mở. Nếu thấy yêu cầu xác minh (2FA, captcha), hãy xử lý trong cửa sổ Chrome. Bot sẽ tự lấy fanpage sau khi đăng nhập xong.</div>':''}
+            <div style="font-size:11px;color:var(--text-faint);margin-top:4px;">
+              ${a.so_fanpage} fanpage${a.lan_sync_cuoi?` · Sync lúc ${new Date(a.lan_sync_cuoi).toLocaleTimeString('vi-VN')}`:''}
+            </div>
+            ${a.so_fanpage>0?`<div id="fp-list-${a.id}" style="margin-top:8px;"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="toggleFpList(${a.id},this)">📄 Xem fanpages</button><div id="fp-list-inner-${a.id}" style="display:none;margin-top:6px;"></div></div>`:''}
+            <div class="account-actions">
+              <button class="btn" style="flex:1;font-size:11px;padding:6px 0;" onclick="syncFanpages(${a.id},this)">🔄 Đồng bộ tự động</button>
+              <button class="btn" style="flex:1;font-size:11px;padding:6px 0;background:var(--c-fanpage-soft);color:var(--c-fanpage);" onclick="openAddManual(${a.id})">➕ Thêm thủ công</button>
+              <button class="btn" style="font-size:11px;padding:6px 10px;" onclick="openEditAccount(${a.id})">✏️</button>
+              <button class="btn btn-danger" style="font-size:11px;padding:6px 10px;" onclick="deleteAccount(${a.id})">🗑</button>
+            </div>
+          </div>
+        `).join('');
+        // Sync table view nếu đang mở
+        if (_accountView === 'table') _renderAccountsTable();
+      }
+
+      async function toggleFpList(id, btn) {
+        const inner = document.getElementById(`fp-list-inner-${id}`);
+        if (inner.style.display !== 'none') { inner.style.display='none'; btn.textContent='📄 Xem fanpages'; return; }
+        btn.textContent='⏳...';
+        try {
+          const status = await api('GET', `/fb-accounts/${id}/status`);
+          const fps = status.fanpages || [];
+          inner.innerHTML = fps.length
+            ? `<div class="fp-list">${fps.map(fp=>`<span class="fp-chip" title="${esc(fp.url)}">📄 ${esc(fp.ten)}</span>`).join('')}</div>`
+            : '<span style="color:var(--text-faint);font-size:12px;">Chưa có fanpage nào.</span>';
+          inner.style.display='';
+          btn.textContent='▲ Ẩn';
+        } catch(e) { btn.textContent='📄 Xem fanpages'; }
+      }
+
+      // ── Account actions ──
+      function openAddAccount(){document.getElementById('accName').value='';document.getElementById('accEmail').value='';document.getElementById('accPass').value='';document.getElementById('addAccountModal').classList.add('open');}
+
+      async function submitAddAccount(){
+        const name=document.getElementById('accName').value.trim();
+        const email=document.getElementById('accEmail').value.trim();
+        const pass=document.getElementById('accPass').value.trim();
+        const token=document.getElementById('accToken').value.trim();
+        if(!name||!email||!pass){toast('error','Thiếu thông tin','Vui lòng điền đầy đủ');return;}
+        try{
+          const body={ten_hien_thi:name,email_or_phone:email,password:pass};
+          const acc=await api('POST','/fb-accounts/',body);
+          // Nếu có token thì cập nhật luôn
+          if(token && acc.id){
+            try{
+              await api('POST',`/fb-accounts/${acc.id}/update-tokens`,{user_access_token:token});
+              toast('success','Đã thêm tài khoản','Token đã được lưu. Bot sẽ đăng bài qua Graph API (nhanh).');
+            }catch(e2){
+              toast('success','Đã thêm tài khoản','Nhấn "Đồng bộ fanpage" để lấy danh sách.');
+            }
+          }else{
+            toast('success','Đã thêm tài khoản','Nhấn "Đồng bộ fanpage" để lấy danh sách fanpage.');
+          }
+          closeModal('addAccountModal');await loadAccounts();
+        }catch(e){toast('error','Lỗi',e.message);}
+      }
+
+      async function syncFanpages(id,btn){
+        btn.disabled=true;btn.textContent='⏳ Đang mở Chrome...';
+        try{
+          await api('POST',`/fb-accounts/${id}/sync-fanpages`);
+          toast('success','Chrome đang mở','Bot tự điền thông tin. Nếu Facebook yêu cầu xác minh 2 bước hoặc captcha, hãy xử lý trong cửa sổ Chrome. Bot sẽ tự lấy fanpage sau khi đăng nhập xong.');
+          // Bắt đầu polling mỗi 8s
+          startPolling(id, btn);
+        }catch(e){toast('error','Lỗi',e.message);btn.disabled=false;btn.textContent='🔄 Đồng bộ fanpage';}
+      }
+
+      const _pollingTimers = {};
+      function startPolling(id, btn) {
+        if (_pollingTimers[id]) clearInterval(_pollingTimers[id]);
+        let tries = 0;
+        _pollingTimers[id] = setInterval(async () => {
+          tries++;
+          try {
+            const status = await api('GET', `/fb-accounts/${id}/status`);
+            // Cập nhật card ngay lập tức
+            const acc = accounts.find(a=>a.id===id);
+            if(acc) {
+              acc.trang_thai = status.trang_thai;
+              acc.so_fanpage = status.so_fanpage;
+              renderAccounts();
+            }
+            // Dừng polling khi xong hoặc lỗi
+            if(status.trang_thai !== 'dang_sync') {
+              clearInterval(_pollingTimers[id]);
+              btn.disabled=false; btn.textContent='🔄 Đồng bộ fanpage';
+              if(status.so_fanpage > 0) {
+                toast('success', `Tìm thấy ${status.so_fanpage} fanpage`, 'Đã đồng bộ thành công!');
+              } else if(status.trang_thai === 'loi') {
+                toast('error', 'Đồng bộ thất bại', 'Kiểm tra log backend hoặc thử lại.');
+              } else {
+                toast('warning', 'Đồng bộ xong — 0 fanpage', 'Facebook không trả về fanpage nào. Hãy đảm bảo đã đăng nhập đúng tài khoản có quản lý fanpage.');
+              }
+              await loadAccounts();
+            }
+          } catch(e) { /* ignore */ }
+          if(tries > 20) { // tối đa 160s
+            clearInterval(_pollingTimers[id]);
+            btn.disabled=false; btn.textContent='🔄 Đồng bộ fanpage';
+          }
+        }, 8000);
+      }
+
+      async function deleteAccount(id){
+        if(!confirm('Xóa tài khoản này? Các lịch liên kết sẽ không còn hoạt động.'))return;
+        try{await api('DELETE',`/fb-accounts/${id}`);toast('success','Đã xóa','');await loadAccounts();}
+        catch(e){toast('error','Lỗi',e.message);}
+      }
+
+      // ── Fanpage selector (khi chọn tài khoản) ──
+      async function onAccountChange(){
+        const accId=parseInt(document.getElementById('fpAccountId').value);
+        selectedPageIds.clear();
+        const sel=document.getElementById('fpFanpageSelector');
+        if(!accId){sel.innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Hãy chọn tài khoản Facebook trước.</span>';return;}
+        sel.innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Đang tải...</span>';
+        try{
+          const fps=await api('GET',`/fb-accounts/${accId}/fanpages`);
+          if(!fps.length){sel.innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Tài khoản này chưa đồng bộ fanpage. Hãy nhấn "Đồng bộ fanpage" ở Bước 1.</span>';return;}
+          sel.innerHTML=fps.map(fp=>`
+            <button type="button" class="fp-sel-chip" data-pid="${esc(fp.page_id)}" onclick="togglePage('${esc(fp.page_id)}',this)">
+              📄 ${esc(fp.ten)}
+            </button>
+          `).join('');
+        }catch(e){sel.innerHTML=`<span style="color:var(--c-logs);font-size:12.5px;">Lỗi: ${esc(e.message)}</span>`;}
+      }
+
+      function togglePage(pid,btn){
+        if(selectedPageIds.has(pid)){selectedPageIds.delete(pid);btn.classList.remove('selected');}
+        else{selectedPageIds.add(pid);btn.classList.add('selected');}
+      }
+
+      // ── Topics ──
+      async function loadTopics(){
+        try{
+          topics=await api('GET','/topics/');
+          const sel=document.getElementById('fpTopicId');
+          sel.innerHTML=topics.length?topics.map(t=>`<option value="${t.id}">${esc(t.ten)}</option>`).join(''):'<option value="">Chưa có chủ đề nào</option>';
+        }catch(e){console.warn('loadTopics:',e);}
+      }
+
+      // ── Mode switch ──
+      function switchMode(mode,btn){
+        document.getElementById('fpMode').value=mode;
+        document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
+        document.getElementById('fpTopicSection').style.display=mode==='topic'?'':'none';
+        document.getElementById('fpContentSection').style.display=mode==='content'?'':'none';
+      }
+
+      // ── Create schedule ──
+      document.getElementById('fpForm').addEventListener('submit',async(e)=>{
+        e.preventDefault();
+        const accId=parseInt(document.getElementById('fpAccountId').value);
+        const thu=document.getElementById('fpThu').value;
+        const gio=document.getElementById('fpGio').value;
+        const mode=document.getElementById('fpMode').value;
+        const page_ids=[...selectedPageIds];
+
+        if(!accId){toast('error','Lỗi','Chọn tài khoản Facebook');return;}
+        if(!thu){toast('error','Lỗi','Chọn ngày đăng bài');return;}
+        if(!gio){toast('error','Lỗi','Nhập giờ chạy');return;}
+        if(!page_ids.length){toast('error','Lỗi','Chọn ít nhất một Fanpage');return;}
+
+        const btn=document.getElementById('fpSubmitBtn');btn.disabled=true;btn.textContent='Đang tạo...';
+        try{
+          let body={thu,gio,fb_account_id:accId,page_ids,dang_kem_anh:document.getElementById('fpDangKemAnh').checked,active:true,one_time:document.getElementById('fpOneTime').checked,giu_nguyen_goc:true};
+          if(mode==='topic'){
+            const tid=parseInt(document.getElementById('fpTopicId').value);
+            if(!tid)throw new Error('Chọn chủ đề');
+            body.topic_id=tid;
+          }else{
+            const txt=document.getElementById('fpContentText').value.trim();
+            if(!txt)throw new Error('Nhập nội dung');
+            body.content_text=txt;
+            body.giu_nguyen_goc=document.getElementById('fpGiuNguyen').checked;
+          }
+          await api('POST','/fanpage-schedules/',body);
+          toast('success','Đã tạo lịch','Lịch đăng fanpage đã được kích hoạt.');
+          resetForm();await loadSchedules();
+        }catch(err){toast('error','Lỗi tạo lịch',err.message);}
+        finally{btn.disabled=false;btn.textContent='📅 Tạo lịch';}
+      });
+
+      function resetForm(){document.getElementById('fpForm').reset();selectedPageIds.clear();document.querySelectorAll('.fp-sel-chip').forEach(c=>c.classList.remove('selected'));document.getElementById('fpFanpageSelector').innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Hãy chọn tài khoản Facebook trước.</span>';}
+
+      // ── Thêm fanpage thủ công ──
+      function openAddManual(accId) {
+        document.getElementById('manualAccId').value = accId;
+        document.getElementById('manualName').value = '';
+        document.getElementById('manualUrl').value = '';
+        document.getElementById('addManualModal').classList.add('open');
+      }
+
+      async function submitAddManual() {
+        const accId = parseInt(document.getElementById('manualAccId').value);
+        const name = document.getElementById('manualName').value.trim();
+        let url = document.getElementById('manualUrl').value.trim();
+        if (!name || !url) { toast('error','Thiếu thông tin','Nhập đầy đủ tên và URL'); return; }
+        // Chuẩn hóa URL
+        if (!url.startsWith('http')) url = 'https://' + url;
+        url = url.split('?')[0].split('#')[0].replace(/\/+$/, '');
+        // Lấy page_id từ URL
+        let page_id = url;
+        if (url.includes('/pages/')) {
+          const parts = url.split('/pages/')[1].split('/');
+          page_id = parts[parts.length - 1] || parts[0];
+        } else {
+          page_id = url.split('facebook.com/')[1] || url;
+        }
+        page_id = page_id.replace(/\/+$/, '');
+        try {
+          await api('POST', `/fb-accounts/${accId}/add-fanpage-manual`, {
+            page_id, ten: name, the_loai: null, avatar_url: null, url
+          });
+          toast('success', 'Đã thêm fanpage', name);
+          closeModal('addManualModal');
+          await loadAccounts();
+        } catch(e) { toast('error', 'Lỗi', e.message); }
+      }
+
+      // ── Load & render schedules ──
+      async function loadSchedules(){
+        try{schedules=await api('GET','/fanpage-schedules/');renderSchedules();updateStats();}
+        catch(e){document.getElementById('schedGrid').innerHTML=`<div class="empty-state"><div class="empty-icon">⚠️</div><p>${esc(e.message)}</p></div>`;}
+      }
+
+      function renderSchedules(){
+        const g=document.getElementById('schedGrid');
+        const badge=document.getElementById('schedBadge');
+        if(!schedules.length){g.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div><p>Chưa có lịch nào. Tạo lịch đầu tiên ở trên!</p></div>';badge.textContent='';
+          // Cũng clear table
+          const tb = document.querySelector('#fpSchedTable tbody'); if(tb) tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-faint);padding:32px;">Chưa có lịch nào.</td></tr>';
+          return;
+        }
+        badge.textContent=schedules.length+' lịch';badge.className=`badge badge-${schedules.some(s=>s.active)?'success':'idle'}`;
+        g.innerHTML=schedules.map((s,i)=>`
+          <div class="sched-card" style="animation-delay:${0.03+i*0.04}s">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
+              <div><div class="sched-time">${esc(s.gio||'--:--')}</div><div class="sched-day">${esc(formatDate(s.thu))}</div></div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                <span class="badge ${s.active?'badge-success':'badge-idle'}" style="font-size:11px;">${s.active?'<span class="dot dot-success"></span> Active':'⏸ Tắt'}</span>
+                ${s.one_time?'<span class="badge" style="font-size:10px;background:var(--c-topics-soft);color:var(--c-topics);padding:2px 7px;">🔂 1 lần</span>':''}
+              </div>
+            </div>
+            <div class="sched-content">${s.topic_name?`🏷️ ${esc(s.topic_name)}`:s.content_text?`📝 ${esc(s.content_text.substring(0,80))}${s.content_text.length>80?'...':''}`:'—'}</div>
+            <div style="font-size:11.5px;color:var(--text-muted);">👤 ${esc(s.fb_account_name)}</div>
+            <div class="sched-meta">${(s.page_names||[]).map(n=>`<span class="fp-chip">📄 ${esc(n)}</span>`).join('')||'<span style="color:var(--text-faint);font-size:12px;">—</span>'}</div>
+            <div style="display:flex;gap:6px;font-size:11px;color:var(--text-faint);">${s.dang_kem_anh?'<span>🖼 Kèm ảnh</span>':''}${s.giu_nguyen_goc?'<span>🔒 Giữ nguyên</span>':'<span>✨ AI viết lại</span>'}${s.one_time?'<span style="color:var(--c-topics);">🔂 Tự tắt sau khi đăng</span>':''}</div>
+            <div class="sched-actions">
+              <button class="btn" style="flex:1;font-size:12px;padding:7px 0;" onclick="toggleActive(${s.id},${!s.active})">${s.active?'⏸ Tắt':'▶ Bật'}</button>
+              <button class="btn" style="flex:1;font-size:12px;padding:7px 0;background:var(--c-fanpage-soft);color:var(--c-fanpage);" onclick="openEditSched(${s.id})">✏️ Sửa</button>
+              <button class="btn btn-danger" style="flex:1;font-size:12px;padding:7px 0;" onclick="deleteSchedule(${s.id})">🗑 Xóa</button>
+            </div>
+          </div>
+        `).join('');
+
+        // Cũng render table view
+        const tb = document.querySelector('#fpSchedTable tbody');
+        if(tb) tb.innerHTML = schedules.map(s=>`
+          <tr>
+            <td><b style="font-family:var(--font-mono)">${esc(s.gio)}</b><br><span style="font-size:11px;color:var(--text-faint)">${esc(formatDate(s.thu))}</span></td>
+            <td style="font-size:12px">${(s.page_names||[]).map(n=>`<span class="fp-chip" style="font-size:10.5px;padding:2px 8px;">📄 ${esc(n)}</span>`).join(' ')||'—'}</td>
+            <td style="font-size:12.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.topic_name?`🏷️ ${esc(s.topic_name)}`:s.content_text?`📝 ${esc(s.content_text.substring(0,60))}...`:'—'}</td>
+            <td><span class="badge ${s.active?'badge-success':'badge-idle'}" style="font-size:11px;">${s.active?'Active':'Tắt'}</span></td>
+            <td>
+              <button class="btn" style="font-size:11px;padding:4px 8px;margin-right:4px;" onclick="toggleActive(${s.id},${!s.active})">${s.active?'⏸':'▶'}</button>
+              <button class="btn" style="font-size:11px;padding:4px 8px;margin-right:4px;" onclick="openEditSched(${s.id})">✏️</button>
+              <button class="btn btn-danger" style="font-size:11px;padding:4px 8px;" onclick="deleteSchedule(${s.id})">🗑</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // ── View toggle cho schedules ──
+      let _schedView = 'card';
+      function setSchedView(v) {
+        _schedView = v;
+        document.getElementById('schedCardView').style.display = v === 'card' ? '' : 'none';
+        document.getElementById('schedTableView').style.display = v === 'table' ? '' : 'none';
+        document.getElementById('viewCardSched').classList.toggle('active', v === 'card');
+        document.getElementById('viewTableSched').classList.toggle('active', v === 'table');
+      }
+
+      // ── View toggle cho accounts ──
+      let _accountView = 'card';
+      function setAccountView(v) {
+        _accountView = v;
+        document.getElementById('accountCardView').style.display = v === 'card' ? '' : 'none';
+        document.getElementById('accountTableView').style.display = v === 'table' ? '' : 'none';
+        document.getElementById('viewCardAcc').classList.toggle('active', v === 'card');
+        document.getElementById('viewTableAcc').classList.toggle('active', v === 'table');
+        if (v === 'table') _renderAccountsTable();
+      }
+
+      function _renderAccountsTable() {
+        const tb = document.querySelector('#accountsTable tbody');
+        if (!tb) return;
+        if (!accounts.length) {
+          tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-faint);padding:24px;">Chưa có tài khoản nào. Nhấn <b>+ Thêm tài khoản</b> để bắt đầu.</td></tr>';
+          return;
+        }
+        tb.innerHTML = accounts.map(a => `
+          <tr>
+            <td><b>${esc(a.ten_hien_thi)}</b></td>
+            <td style="font-family:var(--font-mono);font-size:12px;">${esc(a.email_or_phone)}</td>
+            <td><span class="account-status ${STATUS_CSS[a.trang_thai]||'status-unlinked'}">${STATUS_LABEL[a.trang_thai]||a.trang_thai}</span></td>
+            <td style="font-size:12px;">${a.so_fanpage} fanpage</td>
+            <td>
+              <button class="btn" style="font-size:11px;padding:5px 9px;margin-right:4px;" onclick="syncFanpages(${a.id},this)">🔄 Sync</button>
+              <button class="btn" style="font-size:11px;padding:5px 9px;margin-right:4px;" onclick="openEditAccount(${a.id})">✏️</button>
+              <button class="btn btn-danger" style="font-size:11px;padding:5px 9px;" onclick="deleteAccount(${a.id})">🗑</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      async function toggleActive(id,active){
+        try{await api('PUT',`/fanpage-schedules/${id}`,{active});const idx=schedules.findIndex(s=>s.id===id);if(idx>-1)schedules[idx].active=active;renderSchedules();updateStats();toast('success',active?'Đã bật':'Đã tắt','');}
+        catch(e){toast('error','Lỗi',e.message);}
+      }
+
+      async function deleteSchedule(id){
+        if(!confirm(`Xóa lịch #${id}?`))return;
+        try{await api('DELETE',`/fanpage-schedules/${id}`);schedules=schedules.filter(s=>s.id!==id);renderSchedules();updateStats();toast('success','Đã xóa','');}
+        catch(e){toast('error','Lỗi',e.message);}
+      }
+
+      // ── Sửa lịch fanpage ──
+      function switchEditMode(mode, btn) {
+        document.getElementById('editMode').value = mode;
+        document.querySelectorAll('#editModal .mode-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('editTopicSection').style.display  = mode === 'topic'   ? '' : 'none';
+        document.getElementById('editContentSection').style.display = mode === 'content' ? '' : 'none';
+      }
+
+      function openEditSched(id) {
+        const s = schedules.find(x => x.id === id);
+        if (!s) return;
+        document.getElementById('editId').value = id;
+        document.getElementById('editThu').value = s.thu || '';
+        document.getElementById('editGio').value = s.gio || '';
+        document.getElementById('editDangKemAnh').checked = !!s.dang_kem_anh;
+        document.getElementById('editActive').checked = s.active !== false;
+        document.getElementById('editGiuNguyen').checked = s.giu_nguyen_goc !== false;
+        document.getElementById('editOneTime').checked = !!s.one_time;
+
+        // Xác định mode và điền nội dung
+        if (s.content_text) {
+          document.getElementById('editMode').value = 'content';
+          document.getElementById('editContentText').value = s.content_text || '';
+          document.getElementById('editContentSection').style.display = '';
+          document.getElementById('editTopicSection').style.display = 'none';
+          document.querySelectorAll('#editModal .mode-tab').forEach((t,i) => t.classList.toggle('active', i===1));
+        } else {
+          document.getElementById('editMode').value = 'topic';
+          document.getElementById('editContentSection').style.display = 'none';
+          document.getElementById('editTopicSection').style.display = '';
+          document.querySelectorAll('#editModal .mode-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+          // Populate topic select
+          const sel = document.getElementById('editTopicId');
+          sel.innerHTML = topics.length
+            ? topics.map(t => `<option value="${t.id}" ${t.id == s.topic_id ? 'selected' : ''}>${esc(t.ten)}</option>`).join('')
+            : '<option value="">Chưa có chủ đề</option>';
+        }
+        document.getElementById('editModal').classList.add('open');
+      }
+
+      async function submitEdit() {
+        const id = parseInt(document.getElementById('editId').value);
+        const thu = document.getElementById('editThu').value;
+        const gio = document.getElementById('editGio').value;
+        if (!thu || !gio) { toast('error','Thiếu thông tin','Chọn ngày và giờ'); return; }
+
+        const mode = document.getElementById('editMode').value;
+        const body = {
+          thu, gio,
+          dang_kem_anh:  document.getElementById('editDangKemAnh').checked,
+          active:        document.getElementById('editActive').checked,
+          giu_nguyen_goc: document.getElementById('editGiuNguyen').checked,
+          one_time:      document.getElementById('editOneTime').checked,
+        };
+        if (mode === 'topic') {
+          const tid = parseInt(document.getElementById('editTopicId').value);
+          if (tid) { body.topic_id = tid; body.content_text = null; }
+        } else {
+          const txt = document.getElementById('editContentText').value.trim();
+          if (txt) { body.content_text = txt; body.topic_id = null; }
+        }
+
+        try {
+          await api('PUT', `/fanpage-schedules/${id}`, body);
+          toast('success', 'Đã cập nhật lịch', '');
+          closeModal('editModal');
+          await loadSchedules();
+        } catch(e) { toast('error','Lỗi',e.message); }
+      }
+
+      // ── Sửa tài khoản Facebook ──
+      function openEditAccount(id) {
+        const a = accounts.find(x => x.id === id);
+        if (!a) return;
+        document.getElementById('editAccId').value = id;
+        document.getElementById('editAccName').value = a.ten_hien_thi || '';
+        document.getElementById('editAccEmail').value = a.email_or_phone || '';
+        document.getElementById('editAccPass').value = '';
+        document.getElementById('editAccountModal').classList.add('open');
+      }
+
+      async function submitEditAccount() {
+        const id = parseInt(document.getElementById('editAccId').value);
+        const name = document.getElementById('editAccName').value.trim();
+        const email = document.getElementById('editAccEmail').value.trim();
+        const pass = document.getElementById('editAccPass').value.trim();
+        if (!name || !email) { toast('error','Thiếu thông tin','Nhập tên và email/SĐT'); return; }
+        const body = { ten_hien_thi: name, email_or_phone: email };
+        if (pass) body.password = pass;
+        try {
+          await api('PUT', `/fb-accounts/${id}`, body);
+          toast('success', 'Đã cập nhật tài khoản', '');
+          closeModal('editAccountModal');
+          await loadAccounts();
+        } catch(e) { toast('error','Lỗi',e.message); }
+      }
+
+      function updateStats(){
+        const totalFp=accounts.reduce((s,a)=>s+a.so_fanpage,0);
+        document.getElementById('statAccounts').textContent=accounts.length;
+        document.getElementById('statFanpages').textContent=totalFp;
+        document.getElementById('statSchedules').textContent=schedules.filter(s=>s.active).length;
+      }
+
+      // ── Init ──
+      document.addEventListener('DOMContentLoaded',async()=>{
+        await Auth.guardPage();
+        await loadAll();
+      });
+    </script>
+  </body>
+</html>

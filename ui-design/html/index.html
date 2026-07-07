@@ -24,7 +24,7 @@
     </nav>
     <div class="nav-actions">
       <a href="login.html" class="btn btn-ghost">Đăng nhập</a>
-      <a href="dashboard.html" class="btn btn-primary">Vào Dashboard</a>
+      <a href="#" class="btn btn-primary" onclick="goToDashboard(event)">Vào Dashboard</a>
     </div>
     <button class="nav-toggle" aria-label="Mở menu">☰</button>
   </header>
@@ -188,7 +188,7 @@
       <h2>Sẵn sàng tự động hoá nhóm Facebook của bạn?</h2>
       <p>Thiết lập trong vài phút, theo dõi mọi lúc qua dashboard.</p>
       <div class="hero-actions">
-        <a href="dashboard.html" class="btn btn-dark btn-lg">Vào Dashboard →</a>
+        <a href="#" class="btn btn-dark btn-lg" onclick="goToDashboard(event)">Vào Dashboard →</a>
       </div>
     </div>
   </section>
@@ -212,7 +212,7 @@
         </div>
         <div class="footer-col">
           <h4>Truy cập</h4>
-          <a href="#">Dashboard</a>
+          <a href="#" onclick="goToDashboard(event)">Dashboard</a>
           <a href="login.html">Đăng nhập</a>
         </div>
       </div>
@@ -224,5 +224,16 @@
   </footer>
 
   <script src="/html/script.js"></script>
+  <script>
+    function goToDashboard(e) {
+      e.preventDefault();
+      var token = localStorage.getItem('fbbot-access-token');
+      if (token) {
+        window.location.href = 'dashboard.html';
+      } else {
+        window.location.href = 'login.html';
+      }
+    }
+  </script>
 </body>
 </html>

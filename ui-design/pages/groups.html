@@ -12,10 +12,10 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="../html/css/tokens.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/base.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/components.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/responsive.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/tokens.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/base.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/components.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/responsive.css?v=202507080001" />
     <style>
       /* ── Page extras ── */
       .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
@@ -220,10 +220,13 @@
               <span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span>
             </a>
             <a href="topics.html" class="nav-topics">
-              <span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ đề</span>
+              <span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span>
             </a>
             <a href="schedules.html" class="nav-schedules">
-              <span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch đăng</span>
+              <span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span>
+            </a>
+            <a href="fanpage-schedules.html" class="nav-fanpage">
+              <span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span>
             </a>
             <a href="logs.html" class="nav-logs">
               <span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span>
@@ -292,10 +295,13 @@
           <h3><span>➕</span> Thêm nhóm mới</h3>
           <form id="groupForm">
             <div class="input-group">
-              <input id="groupName" placeholder="Tên nhóm (VD: Cộng đồng mua bán HN)" required />
-              <input id="groupUrl" placeholder="facebook.com/groups/..." required />
+              <input id="groupName" placeholder="Tên nhóm / Fanpage (VD: Cộng đồng mua bán HN)" required />
+              <input id="groupUrl" placeholder="facebook.com/groups/... hoặc facebook.com/page..." required />
             </div>
-            <div class="input-group single" style="margin-bottom:14px;">
+            <div class="input-group" style="margin-bottom:12px;">
+              <select id="groupLoai" style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:var(--text);font-size:13.5px;">
+                <option value="group">👥 Nhóm (Group)</option>
+              </select>
               <input id="groupNote" placeholder="Ghi chú (không bắt buộc)" />
             </div>
             <div style="display:flex; justify-content:flex-end;">
@@ -340,8 +346,14 @@
       <div class="modal-box">
         <h3><span>✏️</span> Sửa nhóm</h3>
         <div style="display:flex; flex-direction:column; gap:12px;">
-          <label class="field"><span>Tên nhóm</span><input id="editGroupTen" /></label>
-          <label class="field"><span>URL nhóm</span><input id="editGroupUrl" /></label>
+          <label class="field"><span>Tên nhóm / Fanpage</span><input id="editGroupTen" /></label>
+          <label class="field"><span>URL nhóm / Fanpage</span><input id="editGroupUrl" /></label>
+          <label class="field"><span>Loại</span>
+            <select id="editGroupLoai" style="padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:var(--text);font-size:13px;">
+              <option value="group">👥 Nhóm (Group)</option>
+              <option value="fanpage">📄 Fanpage</option>
+            </select>
+          </label>
           <label class="field"><span>Ghi chú</span><input id="editGroupGhiChu" /></label>
         </div>
         <div class="modal-actions">
@@ -355,6 +367,7 @@
 
     <script src="../html/theme.js" defer></script>
     <script src="../html/i18n.js" defer></script>
+    <script src="../html/auth.js"></script>
     <script src="../html/api.js" defer></script>
     <script src="../html/app.js" defer></script>
     <script src="../html/script.js" defer></script>
@@ -410,6 +423,7 @@
           document.getElementById('editGroupTen').value = group.ten || '';
           document.getElementById('editGroupUrl').value = group.url || '';
           document.getElementById('editGroupGhiChu').value = group.ghi_chu || '';
+          document.getElementById('editGroupLoai').value = group.loai || 'group';
           document.getElementById('editGroupModal').classList.add('open');
         };
       });
@@ -430,7 +444,9 @@
                 <div class="group-card-name">${escapeHtml(g.ten)}</div>
                 <div class="group-card-url">${escapeHtml(g.url)}</div>
               </div>
-              <span class="badge badge-success" style="flex-shrink:0;"><span class="dot dot-success"></span> Active</span>
+              <span class="badge ${g.loai === 'fanpage' ? 'badge-accent' : 'badge-success'}" style="flex-shrink:0;">
+                ${g.loai === 'fanpage' ? '📄 Fanpage' : '👥 Group'}
+              </span>
             </div>
             ${g.ghi_chu ? `<div class="group-card-note">${escapeHtml(g.ghi_chu)}</div>` : ''}
             <div class="group-card-actions">

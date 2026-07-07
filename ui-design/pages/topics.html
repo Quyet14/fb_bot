@@ -12,10 +12,10 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="../html/css/tokens.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/base.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/components.css?v=202607061201" />
-    <link rel="stylesheet" href="../html/css/responsive.css?v=202607061201" />
+    <link rel="stylesheet" href="../html/css/tokens.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/base.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/components.css?v=202507080001" />
+    <link rel="stylesheet" href="../html/css/responsive.css?v=202507080001" />
     <style>
       .topics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
 
@@ -67,6 +67,14 @@
         overflow: hidden;
       }
       .topic-actions { display: flex; gap: 8px; margin-top: auto; }
+
+      .view-toggle { display: flex; gap: 4px; }
+      .view-btn {
+        padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+        border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted);
+        cursor: pointer; transition: all .15s;
+      }
+      .view-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 
       .form-card {
         background: var(--glass);
@@ -160,8 +168,9 @@
           <nav>
             <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
             <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
-            <a href="topics.html" class="nav-topics active"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ đề</span></a>
-            <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch đăng</span></a>
+            <a href="topics.html" class="nav-topics active"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
+            <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
+            <a href="fanpage-schedules.html" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
             <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
           </nav>
           <div class="sidebar-status">
@@ -232,14 +241,23 @@
         <div class="panel-card">
           <div class="panel-head">
             <h3><span>🏷️</span> Danh sách chủ đề <span id="topicsBadge" class="badge badge-idle" style="font-size:11px; margin-left:6px;"></span></h3>
+            <div class="view-toggle">
+              <button class="view-btn active" id="viewCard" onclick="setTopicView('card')">⊞ Thẻ</button>
+              <button class="view-btn" id="viewTable" onclick="setTopicView('table')">☰ Bảng</button>
+            </div>
           </div>
-          <div style="padding: 16px;">
+          
+          <!-- Card view -->
+          <div id="topicCardsView" style="padding: 16px;">
             <div class="topics-grid" id="topicsGrid">
               <div style="color:var(--text-faint);font-size:13px;">Đang tải...</div>
             </div>
           </div>
-          <!-- fallback table (hidden) -->
-          <table id="topicsTable" style="display:none;"><thead><tr><th>Tên</th><th>Mô tả</th><th></th></tr></thead><tbody></tbody></table>
+          
+          <!-- Table view -->
+          <div id="topicTableView" style="display:none;">
+            <table id="topicsTable"><thead><tr><th>Tên</th><th>Mô tả</th><th style="width:140px;"></th></tr></thead><tbody></tbody></table>
+          </div>
         </div>
       </main>
     </div>
@@ -263,6 +281,7 @@
 
     <script src="../html/theme.js" defer></script>
     <script src="../html/i18n.js" defer></script>
+    <script src="../html/auth.js"></script>
     <script src="../html/api.js" defer></script>
     <script src="../html/app.js" defer></script>
     <script src="../html/script.js" defer></script>
@@ -343,6 +362,17 @@
         document.getElementById('topicsInSchedule').textContent = usedIds.size;
         const badge = document.getElementById('topicsBadge');
         if (badge) { badge.textContent = topics.length + ' chủ đề'; badge.className = topics.length ? 'badge badge-success' : 'badge badge-idle'; }
+      }
+
+      // View toggle
+      let _currentTopicView = 'card';
+      function setTopicView(v) {
+        _currentTopicView = v;
+        document.getElementById('topicCardsView').style.display = v === 'card' ? '' : 'none';
+        document.getElementById('topicTableView').style.display = v === 'table' ? '' : 'none';
+        document.getElementById('viewCard').classList.toggle('active', v === 'card');
+        document.getElementById('viewTable').classList.toggle('active', v === 'table');
+        if (v === 'card') renderTopicCards();
       }
 
       document.addEventListener('DOMContentLoaded', () => {
