@@ -1211,3 +1211,70 @@ body.page-settings { --accent: var(--c-dashboard); --accent-soft: var(--c-dashbo
   color: #f472b6;
   border: 1px solid rgba(244,114,182,0.3);
 }
+
+/* ══════════════════════════════════════════
+   View Toggle — Thẻ / Bảng
+   Dùng chung cho mọi trang có toggle card/table view.
+   Specificity cao để không bị override bởi .btn-primary hay .topbar button
+   ══════════════════════════════════════════ */
+
+.view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.view-toggle .view-btn,
+button.view-btn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px !important;
+  border-radius: 7px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  font-family: var(--font-body) !important;
+  letter-spacing: 0 !important;
+  cursor: pointer;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+  transition: background 0.15s, color 0.15s !important;
+  line-height: 1;
+}
+
+.view-toggle .view-btn:hover,
+button.view-btn:hover {
+  background: var(--glass) !important;
+  color: var(--text) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.view-toggle .view-btn.active,
+button.view-btn.active {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1) !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+.view-toggle .view-btn svg,
+button.view-btn svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

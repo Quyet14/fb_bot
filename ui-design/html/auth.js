@@ -42,7 +42,11 @@ const Auth = {
       return this._apiBase;
     }
 
+    const sameOriginApi = window.location && window.location.origin && window.location.protocol !== 'file:'
+      ? `${window.location.origin}/api`
+      : null;
     const candidates = [
+      ...(sameOriginApi ? [sameOriginApi] : []),
       `http://${window.location.hostname}:8000`,
       `http://${window.location.hostname}:8005`,
     ];
@@ -58,7 +62,11 @@ const Auth = {
 
   async _fetch(path, options = {}) {
     const base = await this._findApiBase();
-    options.headers = { 'Content-Type': 'application/json', ...options.headers };
+    options.headers = { 
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
+      ...options.headers 
+    };
     const res = await fetch(`${base}${path}`, options);
     return res;
   },
@@ -75,9 +83,8 @@ const Auth = {
     }
     const data = await res.json();
     this.setTokens(data.access_token, data.refresh_token, { username: data.username });
-    // Redirect về dashboard
-    const base = window.location.pathname.includes('/html/') ? 'dashboard.html' : '../html/dashboard.html';
-    window.location.href = base;
+    // Redirect về dashboard — luôn dùng path tuyệt đối từ server root
+    window.location.href = '/dashboard';
   },
 
   // ── Đăng ký ───────────────────────────────────────────────
@@ -133,10 +140,7 @@ const Auth = {
   },
 
   _redirectToLogin() {
-    const isInHtml = window.location.pathname.includes('/html/');
-    const isInPages = window.location.pathname.includes('/pages/');
-    if (isInPages) window.location.href = '../html/login.html';
-    else window.location.href = 'login.html';
+    window.location.href = '/login';
   },
 
   // ── Guard: bảo vệ trang dashboard ─────────────────────────

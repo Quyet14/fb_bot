@@ -6,6 +6,7 @@ Chi cho phep 1 job chay cung luc (dung 1 trinh duyet Chrome / 1 phien dang nhap)
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.triggers.cron import CronTrigger
+import os
 
 from app import models, crud
 from app.config import settings
@@ -38,6 +39,30 @@ scheduler = BackgroundScheduler(
     executors={"default": ThreadPoolExecutor(max_workers=1)},
     job_defaults={"max_instances": 1, "coalesce": True, "misfire_grace_time": 3600},
 )
+
+
+def _resolve_upload_path(p: str):
+    if not p:
+        return None
+    try:
+        if os.path.isabs(p):
+            return p
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        if p.startswith('/uploads/images/') or p.startswith('uploads/images/'):
+            relative = p.lstrip('/').replace('/', os.sep)
+            prefix = os.path.join('uploads', 'images') + os.sep
+            if relative.startswith(prefix):
+                relative = relative[len(prefix):]
+            return os.path.join(app_dir, 'uploads', 'images', relative)
+        if '/' not in p and '\\' not in p and os.path.splitext(p)[1]:
+            import glob
+            pattern = os.path.join(app_dir, 'uploads', 'images', '**', p)
+            matches = glob.glob(pattern, recursive=True)
+            if matches:
+                return matches[0]
+        return p
+    except Exception:
+        return p
 
 
 def _lay_cau_hinh_hien_tai(db, user_id=None):
@@ -92,6 +117,57 @@ def job_dang_bai(schedule_id: int):
             crud.finish_log(db, log.id, "error", chi_tiet)
             return
 
+        # Xác định ảnh dựa trên image_mode
+        image_mode = getattr(sch, "image_mode", "random") or "random"
+        image_paths_saved = getattr(sch, "image_paths", None) or []
+        anh_override = None
+        def _resolve_upload_path(p: str):
+            # Accept absolute paths, or convert upload URLs (/uploads/images/...) to filesystem paths.
+            # Also support bare filenames by searching uploads/images/** for a match.
+            import glob
+            if not p:
+                return None
+            try:
+                if os.path.isabs(p):
+                    return p
+                app_dir = os.path.dirname(os.path.abspath(__file__))
+                # upload URL returned by upload endpoints: /uploads/images/... or uploads/images/...
+                if p.startswith('/uploads/images/') or p.startswith('uploads/images/'):
+                    relative = p.lstrip('/').replace('/', os.sep)
+                    prefix = os.path.join('uploads', 'images') + os.sep
+                    if relative.startswith(prefix):
+                        relative = relative[len(prefix):]
+                    return os.path.join(app_dir, 'uploads', 'images', relative)
+                # If looks like a bare filename (no slashes) — search uploads folder
+                if '/' not in p and '\\' not in p and os.path.splitext(p)[1]:
+                    pattern = os.path.join(app_dir, 'uploads', 'images', '**', p)
+                    matches = glob.glob(pattern, recursive=True)
+                    if matches:
+                        return matches[0]
+                return p
+            except Exception:
+                return p
+
+        if sch.dang_kem_anh:
+            if image_mode == "manual":
+                if not image_paths_saved:
+                    crud.finish_log(db, log.id, "error", "Lich dang bai dang chon anh cu the nhung chua co image_paths.")
+                    return
+                # Normalize/resolve stored paths and filter to existing files
+                resolved = [_resolve_upload_path(p) for p in image_paths_saved]
+                valid = [p for p in resolved if p and os.path.exists(p)]
+                print(f"[job_dang_bai] image_mode={image_mode}, saved_paths={image_paths_saved}, resolved_paths={resolved}, valid_paths={valid}")
+                if not valid:
+                    crud.finish_log(
+                        db,
+                        log.id,
+                        "error",
+                        f"Khong tim thay anh da chon cho lich dang bai #{schedule_id}: {image_paths_saved}",
+                    )
+                    return
+                anh_override = valid
+            # random → truyền None, hàm thuc_thi sẽ tự lay_anh_ngau_nhien
+
         thanh_cong, chi_tiet = thuc_thi_tien_trinh_dang(
             chu_de=chu_de,
             noi_dung_goc=noi_dung_goc,
@@ -100,6 +176,7 @@ def job_dang_bai(schedule_id: int):
             dang_kem_anh=sch.dang_kem_anh,
             thu_muc_anh=cfg.thu_muc_anh,
             thoi_gian_cho_giua_cac_nhom=cfg.thoi_gian_cho_giua_cac_nhom,
+            anh_paths_override=anh_override,
         )
 
         crud.finish_log(db, log.id, "success" if thanh_cong else "error", chi_tiet)
@@ -217,12 +294,28 @@ def _normalize_time(gio: str):
 
 def dang_ky_job(loai: str, schedule_id: int, thu: str, gio: str):
     go_job(loai, schedule_id)
-    ngay = _normalize_day(thu)
     gio_parts = _normalize_time(gio)
-    if not ngay or not gio_parts:
+    if not gio_parts:
         return
     gio_h, gio_m = gio_parts
-    trigger = CronTrigger(day_of_week=ngay, hour=int(gio_h), minute=int(gio_m))
+
+    import re
+    if re.match(r'^\d{4}-\d{2}-\d{2}$', str(thu)):
+        try:
+            from datetime import date
+            d = date.fromisoformat(thu)
+            trigger = CronTrigger(
+                year=d.year, month=d.month, day=d.day,
+                hour=int(gio_h), minute=int(gio_m)
+            )
+        except ValueError:
+            return
+    else:
+        ngay = _normalize_day(thu)
+        if not ngay:
+            return
+        trigger = CronTrigger(day_of_week=ngay, hour=int(gio_h), minute=int(gio_m))
+
     ham = {"dang_bai": job_dang_bai, "repost": job_repost, "tuong_tac": job_tuong_tac, "fanpage": job_fanpage}[loai]
     scheduler.add_job(ham, trigger=trigger, args=[schedule_id], id=_job_key(loai, schedule_id), replace_existing=True)
 
@@ -345,16 +438,57 @@ def job_fanpage_v2(schedule_id: int):
         fp_map = {fp["page_id"]: fp for fp in (acc.get("fanpages") or [])}
         ket_qua_list = []
         co_token = any(fp_map.get(pid, {}).get("page_access_token") for pid in page_ids)
+        anh_paths_final = None
+
+        if doc.get("dang_kem_anh", False):
+            image_mode = doc.get("image_mode", "random")
+            image_paths = doc.get("image_paths") or []
+            if image_mode == "manual":
+                if not image_paths:
+                    crud.finish_log(db, log.id, "error", "Lich fanpage dang chon anh cu the nhung chua co image_paths.")
+                    return
+
+                resolved = [_resolve_upload_path(p) for p in image_paths]
+                anh_paths_final = [p for p in resolved if p and os.path.exists(p)]
+                print(f"[job_fanpage_v2] image_mode={image_mode}, saved_paths={image_paths}, resolved_paths={resolved}, valid_paths={anh_paths_final}")
+                if not anh_paths_final:
+                    crud.finish_log(
+                        db,
+                        log.id,
+                        "error",
+                        f"Khong tim thay anh da chon cho lich fanpage #{schedule_id}: {image_paths}",
+                    )
+                    return
+            else:
+                from app.bot.browser import lay_anh_ngau_nhien
+                anh_ngau_nhien = lay_anh_ngau_nhien(cfg.thu_muc_anh)
+                anh_paths_final = [anh_ngau_nhien] if anh_ngau_nhien else None
 
         if co_token:
             # Đăng qua Graph API — nhanh, không Chrome, không hiện giao diện
             print(f"[job_fanpage_v2] Dung Graph API cho {len(page_ids)} fanpage")
+
+            # Xác định danh sách ảnh cần đính kèm
+            anh_paths_final = None
+            if doc.get("dang_kem_anh", False):
+                image_mode = doc.get("image_mode", "random")
+                image_paths = doc.get("image_paths") or []
+                if image_mode == "manual" and image_paths:
+                    resolved = [_resolve_upload_path(p) for p in image_paths]
+                    anh_paths_final = [p for p in resolved if p and os.path.exists(p)]
+                    print(f"[job_fanpage_v2] image_mode={image_mode}, saved_paths={image_paths}, resolved_paths={resolved}, valid_paths={anh_paths_final}")
+                else:
+                    # Random: lấy ảnh ngẫu nhiên từ thư mục
+                    from app.bot.browser import lay_anh_ngau_nhien
+                    anh_ngau_nhien = lay_anh_ngau_nhien(cfg.thu_muc_anh)
+                    anh_paths_final = [anh_ngau_nhien] if anh_ngau_nhien else None
+
             for pid in page_ids:
                 fp = fp_map.get(pid, {})
                 token = fp.get("page_access_token")
                 if token:
-                    ok, detail = dang_bai_graph_api(pid, noi_dung_final, token)
-                    ket_qua_list.append(f"{fp.get('ten', pid)}: {'SUCCESS' if ok else detail}")
+                    ok, detail = dang_bai_graph_api(pid, noi_dung_final, token, anh_paths=anh_paths_final)
+                    ket_qua_list.append(f"{fp.get('ten', pid)}: {detail}")
                 else:
                     ket_qua_list.append(f"{fp.get('ten', pid)}: no_token_skip")
             chi_tiet = "\n".join(ket_qua_list)
@@ -370,6 +504,7 @@ def job_fanpage_v2(schedule_id: int):
                 dang_kem_anh=doc.get("dang_kem_anh", False),
                 thu_muc_anh=cfg.thu_muc_anh,
                 thoi_gian_cho_giua_cac_nhom=cfg.thoi_gian_cho_giua_cac_nhom,
+                anh_paths_override=anh_paths_final,
             )
             co_thanh_cong = thanh_cong and ("SUCCESS" in (chi_tiet or "") or "PENDING" in (chi_tiet or ""))
         trang_thai_log = "success" if co_thanh_cong else "error"

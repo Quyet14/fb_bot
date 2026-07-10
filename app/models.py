@@ -8,6 +8,7 @@ import datetime
 from sqlalchemy import (
     Column, Integer, String, Boolean, Text, DateTime, ForeignKey, Table
 )
+import json
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -96,12 +97,28 @@ class PostSchedule(Base):
     giu_nguyen_goc = Column(Boolean, default=True)
 
     dang_kem_anh = Column(Boolean, default=False)
+    image_mode = Column(String(20), default="random")
+    _image_paths = Column('image_paths', Text, nullable=True)
     active = Column(Boolean, default=True)
     tao_luc = Column(DateTime, default=datetime.datetime.utcnow)
 
     topic = relationship("Topic")
     content = relationship("UserContent")
     groups = relationship("Group", secondary=post_schedule_groups)
+
+    @property
+    def image_paths(self):
+        try:
+            return json.loads(self._image_paths) if self._image_paths else []
+        except Exception:
+            return []
+
+    @image_paths.setter
+    def image_paths(self, val):
+        try:
+            self._image_paths = json.dumps(val or [])
+        except Exception:
+            self._image_paths = json.dumps([])
 
 
 
@@ -152,12 +169,28 @@ class FanpageSchedule(Base):
     giu_nguyen_goc = Column(Boolean, default=True)
 
     dang_kem_anh = Column(Boolean, default=False)
+    image_mode = Column(String(20), default="random")
+    _image_paths = Column('image_paths', Text, nullable=True)
     active = Column(Boolean, default=True)
     tao_luc = Column(DateTime, default=datetime.datetime.utcnow)
 
     topic = relationship("Topic")
     content = relationship("UserContent")
     fanpages = relationship("Group", secondary=fanpage_schedule_fanpages)
+
+    @property
+    def image_paths(self):
+        try:
+            return json.loads(self._image_paths) if self._image_paths else []
+        except Exception:
+            return []
+
+    @image_paths.setter
+    def image_paths(self, val):
+        try:
+            self._image_paths = json.dumps(val or [])
+        except Exception:
+            self._image_paths = json.dumps([])
 
 
 # ============================================================

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
@@ -84,13 +84,53 @@
     .danger-zone .section-head h3 { color:var(--danger,#ef4444); }
     .btn-danger-outline { background:transparent; border:1px solid var(--danger,#ef4444); color:var(--danger,#ef4444); }
     .btn-danger-outline:hover { background:rgba(239,68,68,.1); }
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(15, 23, 42, .48);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .confirm-overlay.open { display: flex; }
+    .confirm-dialog {
+      width: min(440px, 100%);
+      background: var(--glass-strong);
+      border: 1px solid var(--glass-border);
+      border-radius: 18px;
+      box-shadow: 0 26px 80px rgba(15, 23, 42, .35);
+      overflow: hidden;
+      animation: confirmIn .18s var(--ease) both;
+    }
+    @keyframes confirmIn {
+      from { opacity: 0; transform: translateY(8px) scale(.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .confirm-body { padding: 22px 24px 18px; display:flex; gap:14px; align-items:flex-start; }
+    .confirm-icon {
+      width: 44px; height: 44px; border-radius: 14px;
+      display:flex; align-items:center; justify-content:center;
+      background: rgba(239,68,68,.12); color: var(--danger,#ef4444);
+      font-size: 22px; flex-shrink:0;
+    }
+    .confirm-title { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .confirm-text { font-size: 13.5px; line-height: 1.55; color: var(--text-muted); }
+    .confirm-actions {
+      display:flex; justify-content:flex-end; gap:10px;
+      padding: 14px 24px 22px;
+    }
+    .confirm-actions .btn { min-width: 106px; }
     @media(max-width:900px){ .profile-grid{grid-template-columns:1fr} .field-row{grid-template-columns:1fr} }
   </style>
 </head>
 <body class="page-profile">
   <header class="global-bar">
     <div class="global-bar-left">
-      <a href="../html/dashboard.html" class="global-bar-logo">
+      <a href="/dashboard" class="global-bar-logo">
         <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
         <span class="global-bar-logo-text">FB Bot Console</span>
       </a>
@@ -99,7 +139,7 @@
     </div>
     <div class="global-bar-right">
       <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
-      <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
+      <a href="/settings" class="global-bar-btn" title="Cài đặt">⚙️</a>
     </div>
   </header>
 
@@ -107,13 +147,13 @@
     <div class="sidebar-wrapper" id="sidebarWrapper">
       <aside class="sidebar" id="sidebar">
         <nav>
-          <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></a>
-          <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
-          <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
-          <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
-          <a href="fanpage-schedules.html" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
-          <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
-          <a href="profile.html" class="nav-profile active"><span class="nav-icon">👤</span><span class="nav-label">Tài Khoản</span></a>
+          <a href="/dashboard" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></a>
+          <a href="/groups" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+          <a href="/topics" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
+          <a href="/schedules" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
+          <a href="/fanpage-schedules" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
+          <a href="/logs" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+          <a href="/profile" class="nav-profile active"><span class="nav-icon">👤</span><span class="nav-label">Tài Khoản</span></a>
         </nav>
         <div class="sidebar-status"><span class="dot dot-success"></span>
           <div class="sidebar-status-text"><span class="label">Bot đang chạy</span><span class="sub">v1.0.0</span></div>
@@ -141,7 +181,7 @@
             <div class="avatar-area">
               <div class="avatar-wrap">
                 <div class="avatar-circle" id="avatarCircle">?</div>
-                <div class="avatar-edit-btn" title="Đổi avatar" onclick="document.getElementById('avatarUrlInput').focus(); document.getElementById('avatarUrlInput').scrollIntoView({behavior:'smooth'})">✏️</div>
+                <button class="avatar-edit-btn" type="button" title="Đổi avatar" onclick="openAvatarPicker()">✏️</button>
               </div>
               <div class="profile-name" id="profileDisplayName">—</div>
               <div class="profile-username" id="profileDisplayUsername">@—</div>
@@ -188,10 +228,6 @@
               <div class="field">
                 <label for="profileBio">Giới thiệu bản thân <span style="color:var(--text-faint);font-weight:400;font-size:11px;">(tuỳ chọn)</span></label>
                 <textarea id="profileBio" placeholder="Ví dụ: Quản trị viên hệ thống tự động hóa Facebook..."></textarea>
-              </div>
-              <div class="field">
-                <label for="avatarUrlInput">URL ảnh đại diện <span style="color:var(--text-faint);font-weight:400;font-size:11px;">(tuỳ chọn)</span></label>
-                <input id="avatarUrlInput" type="url" placeholder="https://example.com/avatar.jpg" oninput="previewAvatar(this.value)" />
               </div>
               <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
                 <button class="btn" type="button" onclick="loadProfileData()">↺ Đặt lại</button>
@@ -267,6 +303,23 @@
   </div>
 
   <div id="toastContainer" class="toast-container"></div>
+  <div class="confirm-overlay" id="logoutConfirm" role="dialog" aria-modal="true" aria-labelledby="logoutConfirmTitle">
+    <div class="confirm-dialog">
+      <div class="confirm-body">
+        <div class="confirm-icon">🚪</div>
+        <div>
+          <div class="confirm-title" id="logoutConfirmTitle">Đăng xuất khỏi tất cả thiết bị?</div>
+          <div class="confirm-text">Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng bảng điều khiển.</div>
+        </div>
+      </div>
+      <div class="confirm-actions">
+        <button class="btn" type="button" onclick="closeLogoutConfirm()">Hủy</button>
+        <button class="btn btn-danger-outline" type="button" id="confirmLogoutBtn" onclick="confirmLogoutAll()">Đăng xuất</button>
+      </div>
+    </div>
+  </div>
+  <input id="avatarUrlInput" type="hidden" />
+  <input id="avatarFileInput" type="file" accept="image/*" style="display:none" onchange="handleAvatarFile(this.files && this.files[0])" />
 
   <script src="../html/theme.js" defer></script>
   <script src="../html/i18n.js" defer></script>
@@ -281,9 +334,15 @@
 
     // ── API base ─────────────────────────────────────────────
     let _apiBase = null;
+    let selectedAvatarFile = null;
     async function getBase() {
       if (_apiBase) return _apiBase;
-      const cands = [`http://${location.hostname}:8000`,`http://${location.hostname}:8005`];
+      if (window.Auth && typeof Auth._findApiBase === 'function') {
+        _apiBase = await Auth._findApiBase();
+        return _apiBase;
+      }
+      const sameOriginApi = location.protocol !== 'file:' ? `${location.origin}/api` : null;
+      const cands = [...(sameOriginApi ? [sameOriginApi] : []), `http://${location.hostname}:8000`,`http://${location.hostname}:8005`];
       for (const b of cands) {
         try { const r=await fetch(`${b}/`,{signal:AbortSignal.timeout(2000)}); if(r.ok){_apiBase=b;return b;} } catch(_){}
       }
@@ -292,12 +351,32 @@
     async function apiCall(path, method='GET', body=null) {
       const base = await getBase();
       const token = Auth.getAccessToken();
-      const opts = { method, headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})} };
+      const opts = { method, headers:{'Content-Type':'application/json','ngrok-skip-browser-warning':'true',...(token?{Authorization:`Bearer ${token}`}:{})} };
       if (body) opts.body = JSON.stringify(body);
       const res = await fetch(`${base}${path}`, opts);
       if (res.status === 204) return null;
       const data = await res.json().catch(()=>({}));
       if (!res.ok) throw new Error(data.detail || `Lỗi ${res.status}`);
+      return data;
+    }
+    function assetUrl(path) {
+      if (!path) return '';
+      if (/^https?:\/\//i.test(path) || path.startsWith('data:') || path.startsWith('blob:')) return path;
+      if (path.startsWith('/uploads/')) return `${location.origin}${path}`;
+      return path;
+    }
+    async function uploadAvatarFile(file) {
+      const base = await getBase();
+      const token = Auth.getAccessToken();
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${base}/auth/profile/avatar`, {
+        method: 'POST',
+        headers: {'ngrok-skip-browser-warning':'true', ...(token?{Authorization:`Bearer ${token}`}:{})},
+        body: form,
+      });
+      const data = await res.json().catch(()=>({}));
+      if (!res.ok) throw new Error(data.detail || `Lỗi tải ảnh (${res.status})`);
       return data;
     }
 
@@ -310,6 +389,7 @@
         document.getElementById('profileEmail').value = user.email || '';
         document.getElementById('profileBio').value = user.bio || '';
         document.getElementById('avatarUrlInput').value = user.avatar_url || '';
+        selectedAvatarFile = null;
 
         // Sidebar card
         document.getElementById('profileDisplayName').textContent = user.full_name || user.username;
@@ -329,7 +409,7 @@
     function updateAvatar(url, name) {
       const el = document.getElementById('avatarCircle');
       if (url) {
-        el.innerHTML = `<img src="${url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentElement.textContent='${(name||'?')[0].toUpperCase()}'" />`;
+        el.innerHTML = `<img src="${assetUrl(url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentElement.textContent='${(name||'?')[0].toUpperCase()}'" />`;
       } else {
         el.textContent = (name || '?')[0].toUpperCase();
       }
@@ -338,6 +418,24 @@
     function previewAvatar(url) {
       const name = document.getElementById('profileFullName').value || document.getElementById('profileUsername').value || '?';
       updateAvatar(url, name);
+    }
+
+    function openAvatarPicker() {
+      document.getElementById('avatarFileInput')?.click();
+    }
+
+    function handleAvatarFile(file) {
+      if (!file) return;
+      if (!file.type || !file.type.startsWith('image/')) {
+        const msg = document.getElementById('profileMsg');
+        msg.textContent = '✗ Vui lòng chọn file ảnh.';
+        msg.className = 'form-msg error show';
+        return;
+      }
+      selectedAvatarFile = file;
+      const reader = new FileReader();
+      reader.onload = () => previewAvatar(reader.result);
+      reader.readAsDataURL(file);
     }
 
     // ── Save profile ─────────────────────────────────────────
@@ -355,12 +453,22 @@
       };
 
       try {
+        if (selectedAvatarFile) {
+          btn.textContent = 'Đang tải ảnh...';
+          const avatarUser = await uploadAvatarFile(selectedAvatarFile);
+          payload.avatar_url = avatarUser.avatar_url || payload.avatar_url;
+          document.getElementById('avatarUrlInput').value = payload.avatar_url || '';
+          selectedAvatarFile = null;
+        }
+        btn.textContent = 'Đang lưu...';
         const updated = await apiCall('/auth/profile', 'PUT', payload);
         msg.textContent = '✓ Đã lưu thông tin thành công!';
         msg.className = 'form-msg success show';
         // Cập nhật sidebar
         document.getElementById('profileDisplayName').textContent = updated.full_name || updated.username;
         document.getElementById('metaEmail').textContent = updated.email || 'Chưa cập nhật';
+        updateAvatar(updated.avatar_url, updated.full_name || updated.username);
+        Auth.setTokens(Auth.getAccessToken(), Auth.getRefreshToken(), updated);
         if (typeof showToast === 'function') showToast('success','Đã lưu thông tin','Hồ sơ của bạn đã được cập nhật.');
       } catch(err) {
         msg.textContent = '✗ ' + (err.message || 'Lỗi khi lưu');
@@ -434,10 +542,26 @@
     function showPwErr(m){const el=document.getElementById('pwMsg');el.textContent='✗ '+m;el.className='form-msg error show';}
 
     // ── Logout all ────────────────────────────────────────────
-    async function logoutAll() {
-      if(!confirm('Bạn có chắc muốn đăng xuất khỏi tất cả thiết bị?')) return;
+    function logoutAll() {
+      document.getElementById('logoutConfirm')?.classList.add('open');
+    }
+
+    function closeLogoutConfirm() {
+      document.getElementById('logoutConfirm')?.classList.remove('open');
+    }
+
+    async function confirmLogoutAll() {
+      const btn = document.getElementById('confirmLogoutBtn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Đang thoát...'; }
       await Auth.logout();
     }
+
+    document.getElementById('logoutConfirm')?.addEventListener('click', (e) => {
+      if (e.target.id === 'logoutConfirm') closeLogoutConfirm();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLogoutConfirm();
+    });
 
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {

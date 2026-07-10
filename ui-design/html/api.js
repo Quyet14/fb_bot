@@ -1,15 +1,36 @@
+const _HOST = window.location && window.location.hostname ? window.location.hostname : '127.0.0.1';
+const _SAME_ORIGIN_API = window.location && window.location.origin && window.location.protocol !== 'file:'
+  ? `${window.location.origin}/api`
+  : null;
 const API_BASE_CANDIDATES = [
-  `http://${window.location.hostname}:8000`,
-  `http://${window.location.hostname}:8005`
+  // Ưu tiên config từ window.FBBOT_API_URL nếu được set
+  ...(window.FBBOT_API_URL ? [window.FBBOT_API_URL] : []),
+  ...(_SAME_ORIGIN_API ? [_SAME_ORIGIN_API] : []),
+  `http://${_HOST}:8000`,
+  `http://${_HOST}:8005`,
+  'http://127.0.0.1:8000',
+  'http://127.0.0.1:8005',
+  'http://localhost:8000',
+  'http://localhost:8005'
 ];
+const API_CANDIDATES_FAST = (() => {
+  const isLocalHost = ['localhost', '127.0.0.1'].includes(_HOST) || /^192\.168\.|^10\.|^172\.(1[6-9]|2\d|3[01])\./.test(_HOST);
+  if (isLocalHost) return API_BASE_CANDIDATES;
+  return API_BASE_CANDIDATES.filter(base =>
+    (window.FBBOT_API_URL && base === window.FBBOT_API_URL) ||
+    (_SAME_ORIGIN_API && base === _SAME_ORIGIN_API)
+  );
+})();
 
 function makeApiUrl(path, base) {
   return path.startsWith('http://') || path.startsWith('https://') ? path : `${base}${path}`;
 }
 
 async function fetchJson(url, options = {}) {
-  const candidates = API_BASE_CANDIDATES.map(base => makeApiUrl(url, base));
+  const candidates = API_CANDIDATES_FAST.map(base => makeApiUrl(url, base));
   let lastError = null;
+  const timeoutMs = options.timeoutMs || 1200;
+  delete options.timeoutMs;
 
   // Đính kèm Authorization header — ưu tiên Auth object, fallback đọc trực tiếp localStorage
   let token = null;
@@ -19,7 +40,12 @@ async function fetchJson(url, options = {}) {
     token = localStorage.getItem('fbbot-access-token');
   }
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-  options.headers = { ...authHeaders, ...options.headers };
+  // Thêm header để bypass ngrok browser warning
+  options.headers = { 
+    'ngrok-skip-browser-warning': 'true',
+    ...authHeaders, 
+    ...options.headers 
+  };
 
   // Debug: log nếu không có token
   if (!token) {
@@ -28,7 +54,11 @@ async function fetchJson(url, options = {}) {
 
   for (const candidate of candidates) {
     try {
-      const res = await fetch(candidate, options);
+      // Per-candidate timeout to avoid long hang when a backend is unreachable
+      const controller = new AbortController();
+      const to = setTimeout(() => controller.abort(), timeoutMs);
+      const res = await fetch(candidate, { ...options, signal: controller.signal });
+      clearTimeout(to);
       if (res.status === 204) return null;
       if (res.status === 401) {
         // Thử silent refresh
@@ -71,7 +101,8 @@ async function fetchJson(url, options = {}) {
     } catch (error) {
       lastError = error;
       // Nếu lỗi mạng, thử port khác.
-      if (error instanceof TypeError || error.message.includes('Failed to fetch')) {
+      // Abort errors and network failures should try the next candidate
+      if (error.name === 'AbortError' || error instanceof TypeError || (error.message && error.message.includes('Failed to fetch'))) {
         continue;
       }
       throw error;
@@ -213,6 +244,14 @@ async function saveSettingsApi(payload) {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
+  });
+}
+
+async function selectImageDirectory() {
+  return fetchJson('/settings/select-image-dir', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    timeoutMs: 300000
   });
 }
 

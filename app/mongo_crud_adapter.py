@@ -116,6 +116,10 @@ class MongoCrudAdapter:
         data["topic"] = self._topic_or_placeholder(topic_id, user_id) if topic_id is not None else None
         data["content"] = self._content_or_placeholder(content_id, user_id)
         data["groups"] = [self._group_or_placeholder(gid, user_id) for gid in group_ids]
+        # Ensure image-related fields are present for backward compatibility
+        data["dang_kem_anh"] = doc.get("dang_kem_anh", False)
+        data["image_mode"] = doc.get("image_mode", "random")
+        data["image_paths"] = doc.get("image_paths") or []
         return schemas.PostScheduleOut.model_validate(data)
 
     def _repost_schedule_from_doc(self, doc, user_id: Optional[str] = None):
@@ -426,6 +430,10 @@ class MongoCrudAdapter:
         data["topic"] = self._topic_or_placeholder(topic_id, user_id) if topic_id is not None else None
         data["content"] = self._content_or_placeholder(content_id, user_id)
         data["fanpages"] = [self._group_or_placeholder(fid, user_id) for fid in fanpage_ids]
+        # Ensure image-related fields are present for backward compatibility
+        data["dang_kem_anh"] = doc.get("dang_kem_anh", False)
+        data["image_mode"] = doc.get("image_mode", "random")
+        data["image_paths"] = doc.get("image_paths") or []
         return schemas.FanpageScheduleOut.model_validate(data)
 
     def list_fanpage_schedules(self, user_id: Optional[str] = None):

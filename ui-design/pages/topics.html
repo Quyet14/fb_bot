@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -145,7 +145,7 @@
     <!-- ══ GLOBAL BAR ══ -->
     <header class="global-bar">
       <div class="global-bar-left">
-        <a href="../html/dashboard.html" class="global-bar-logo">
+        <a href="/dashboard" class="global-bar-logo">
           <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
           <span class="global-bar-logo-text">FB Bot Console</span>
         </a>
@@ -157,8 +157,8 @@
       </div>
       <div class="global-bar-right">
         <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
-        <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
-        <a href="profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+        <a href="/settings" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="/profile" class="global-bar-btn" title="Tài khoản">👤</a>
       </div>
     </header>
 
@@ -166,12 +166,12 @@
       <div class="sidebar-wrapper" id="sidebarWrapper">
         <aside class="sidebar" id="sidebar">
           <nav>
-            <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
-            <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
-            <a href="topics.html" class="nav-topics active"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
-            <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
-            <a href="fanpage-schedules.html" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
-            <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+            <a href="/dashboard" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
+            <a href="/groups" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+            <a href="/topics" class="nav-topics active"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
+            <a href="/schedules" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
+            <a href="/fanpage-schedules" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
+            <a href="/logs" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
           </nav>
           <div class="sidebar-status">
             <span class="dot dot-success"></span>
@@ -242,8 +242,8 @@
           <div class="panel-head">
             <h3><span>🏷️</span> Danh sách chủ đề <span id="topicsBadge" class="badge badge-idle" style="font-size:11px; margin-left:6px;"></span></h3>
             <div class="view-toggle">
-              <button class="view-btn active" id="viewCard" onclick="setTopicView('card')">⊞ Thẻ</button>
-              <button class="view-btn" id="viewTable" onclick="setTopicView('table')">☰ Bảng</button>
+              <button class="view-btn active" id="viewCard" onclick="setTopicView('card')"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg> Thẻ</button>
+              <button class="view-btn" id="viewTable" onclick="setTopicView('table')"><svg viewBox="0 0 16 16" width="13" height="13" stroke="currentColor" fill="none" stroke-width="1.8"><line x1="1" y1="4" x2="15" y2="4"/><line x1="1" y1="8" x2="15" y2="8"/><line x1="1" y1="12" x2="15" y2="12"/></svg> Bảng</button>
             </div>
           </div>
           
@@ -368,6 +368,7 @@
       let _currentTopicView = 'card';
       function setTopicView(v) {
         _currentTopicView = v;
+        if (typeof setViewPref === 'function') setViewPref('topics', v);
         document.getElementById('topicCardsView').style.display = v === 'card' ? '' : 'none';
         document.getElementById('topicTableView').style.display = v === 'table' ? '' : 'none';
         document.getElementById('viewCard').classList.toggle('active', v === 'card');
@@ -382,6 +383,9 @@
           renderTopicCards();
           updateTopicStats();
         };
+        // Khôi phục view đã lưu
+        const saved = (typeof getViewPref === 'function') ? getViewPref('topics') : 'card';
+        if (saved !== 'card') setTopicView(saved);
       });
     </script>
   </body>

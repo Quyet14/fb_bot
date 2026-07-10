@@ -5,6 +5,8 @@ khoi dong scheduler va nap lich tu database.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 from app.database import Base, engine
 from app.config import settings
@@ -49,8 +51,17 @@ app.include_router(user_contents_router.router)
 def khoi_dong():
     if not settings.USE_MONGODB:
         Base.metadata.create_all(bind=engine)
+    # Tạo thư mục uploads nếu chưa có
+    upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads", "images")
+    os.makedirs(upload_dir, exist_ok=True)
     nap_lai_toan_bo_lich()
     scheduler.start()
+
+
+# Serve uploaded images as static files
+_upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads", "images")
+os.makedirs(_upload_dir, exist_ok=True)
+app.mount("/uploads/images", StaticFiles(directory=_upload_dir), name="uploads")
 
 
 @app.on_event("shutdown")
