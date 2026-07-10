@@ -321,3 +321,14 @@ document.addEventListener('DOMContentLoaded', () => {
       statusEl.innerHTML = '<span class="dot dot-danger"></span> Không kết nối được';
     });
 });
+
+// ── 9. View preference — lưu/khôi phục lựa chọn Thẻ/Bảng ──
+// Mỗi trang dùng key riêng để không xung đột.
+function getViewPref(key) {
+  try { return localStorage.getItem('fbbot-view-' + key) || 'card'; } catch (_) { return 'card'; }
+}
+function setViewPref(key, value) {
+  try { localStorage.setItem('fbbot-view-' + key, value); } catch (_) {}
+}
+window.getViewPref = getViewPref;
+window.setViewPref = setViewPref;

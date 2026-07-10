@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -129,7 +129,7 @@
     <!-- ══ GLOBAL BAR ══ -->
     <header class="global-bar">
       <div class="global-bar-left">
-        <a href="../html/dashboard.html" class="global-bar-logo">
+        <a href="/dashboard" class="global-bar-logo">
           <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
           <span class="global-bar-logo-text">FB Bot Console</span>
         </a>
@@ -141,8 +141,8 @@
       </div>
       <div class="global-bar-right">
         <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
-        <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
-        <a href="profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+        <a href="/settings" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="/profile" class="global-bar-btn" title="Tài khoản">👤</a>
       </div>
     </header>
 
@@ -150,12 +150,12 @@
       <div class="sidebar-wrapper" id="sidebarWrapper">
         <aside class="sidebar" id="sidebar">
           <nav>
-            <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
-            <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
-            <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
-            <a href="schedules.html" class="nav-schedules active"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
-            <a href="fanpage-schedules.html" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
-            <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+            <a href="/dashboard" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
+            <a href="/groups" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+            <a href="/topics" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
+            <a href="/schedules" class="nav-schedules active"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
+            <a href="/fanpage-schedules" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
+            <a href="/logs" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
           </nav>
           <div class="sidebar-status">
             <span class="dot dot-success"></span>
@@ -220,12 +220,12 @@
             <!-- Time row (chung) -->
             <div class="field-grid field-grid-2" style="margin-bottom:14px;">
               <label class="field">
-                <span>Thứ trong tuần</span>
-                <input id="scheduleThu" placeholder="Thứ 2, Thứ 3, Chủ nhật..." required />
+                <span>📅 Ngày đăng bài</span>
+                <input id="scheduleThu" type="date" required />
               </label>
               <label class="field">
-                <span>Giờ chạy</span>
-                <input id="scheduleGio" placeholder="08:00" required />
+                <span>⏰ Giờ chạy</span>
+                <input id="scheduleGio" type="time" required />
               </label>
             </div>
 
@@ -260,9 +260,40 @@
                   <span>Giữ nguyên gốc</span>
                 </label>
                 <label class="checkbox-inline">
-                  <input id="scheduleDangKemAnh" type="checkbox" />
+                  <input id="scheduleDangKemAnh" type="checkbox" onchange="toggleSchedImageSection(this.checked)" />
                   <span>Đính kèm ảnh</span>
                 </label>
+              </div>
+
+              <!-- Image picker cho lịch nhóm -->
+              <div id="schedImageSection" style="display:none;margin-top:10px;padding:14px;background:var(--bg-soft);border-radius:var(--radius-sm);border:1px solid var(--border-soft);">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:10px;">🖼 Cài đặt ảnh</div>
+                <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
+                  <label class="checkbox-inline">
+                    <input type="radio" name="schedImageMode" value="random" checked onchange="onSchedImageModeChange()" />
+                    <span>🎲 Random (tự chọn ảnh phù hợp)</span>
+                  </label>
+                  <label class="checkbox-inline">
+                    <input type="radio" name="schedImageMode" value="manual" onchange="onSchedImageModeChange()" />
+                    <span>📁 Chọn ảnh cụ thể</span>
+                  </label>
+                </div>
+                <div id="schedImageRandomSection" style="font-size:12.5px;color:var(--text-muted);padding:10px 12px;background:var(--accent-soft);border-radius:8px;">
+                  🤖 Bot tự chọn ảnh ngẫu nhiên từ thư mục ảnh trong <b>Cài đặt</b>.
+                </div>
+                <div id="schedImageManualSection" style="display:none;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+                    <label id="schedUploadLabel" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-pill);border:1px dashed var(--border);background:var(--glass);font-size:12.5px;font-weight:600;color:var(--text-muted);">
+                      <input type="file" accept="image/*" multiple style="display:none;" id="schedImageUploadInput" onchange="uploadSchedImages(this.files)" />
+                      <span id="schedUploadText">⬆ Tải ảnh lên</span>
+                    </label>
+                    <span style="font-size:12px;color:var(--text-faint);">Chọn không giới hạn — click ảnh để chọn/bỏ</span>
+                  </div>
+                  <div id="schedImageGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;min-height:60px;">
+                    <div style="color:var(--text-faint);font-size:12px;grid-column:1/-1;text-align:center;padding:16px;">Chưa có ảnh nào.</div>
+                  </div>
+                  <div style="margin-top:8px;font-size:12px;color:var(--text-faint);">Click ảnh để chọn/bỏ. Nhấn ✕ để xóa ảnh khỏi thư viện.</div>
+                </div>
               </div>
             </div>
 
@@ -293,8 +324,8 @@
           <div class="panel-head">
             <h3><span>📋</span> Danh sách lịch</h3>
             <div class="view-toggle">
-              <button class="view-btn active" id="viewCardSchedules" onclick="setSchedulesView('card')">⊞ Thẻ</button>
-              <button class="view-btn" id="viewTableSchedules" onclick="setSchedulesView('table')">☰ Bảng</button>
+              <button class="view-btn active" id="viewCardSchedules" onclick="setSchedulesView('card')"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg> Thẻ</button>
+              <button class="view-btn" id="viewTableSchedules" onclick="setSchedulesView('table')"><svg viewBox="0 0 16 16" width="13" height="13" stroke="currentColor" fill="none" stroke-width="1.8"><line x1="1" y1="4" x2="15" y2="4"/><line x1="1" y1="8" x2="15" y2="8"/><line x1="1" y1="12" x2="15" y2="12"/></svg> Bảng</button>
             </div>
           </div>
           
@@ -306,13 +337,13 @@
           <!-- Table view (hidden by default) -->
           <div id="schedulesTableView" style="display:none; padding: 16px;">
             <div style="margin-bottom:16px;"><strong style="font-size:13px;">📝 Lịch đăng bài</strong></div>
-            <table id="postsTable"><thead><tr><th>Thứ</th><th>Giờ</th><th>Chủ đề</th><th>Nhóm</th><th style="width:120px;"></th></tr></thead><tbody></tbody></table>
+            <table id="postsTable"><thead><tr><th>Ngày</th><th>Giờ</th><th>Chủ đề</th><th>Nhóm</th><th style="width:120px;"></th></tr></thead><tbody></tbody></table>
             
             <div style="margin:24px 0 16px;"><strong style="font-size:13px;">🔁 Lịch repost</strong></div>
-            <table id="repostsTable"><thead><tr><th>Thứ</th><th>Giờ</th><th>Nguồn</th><th>Đích</th><th style="width:120px;"></th></tr></thead><tbody></tbody></table>
+            <table id="repostsTable"><thead><tr><th>Ngày</th><th>Giờ</th><th>Nguồn</th><th>Đích</th><th style="width:120px;"></th></tr></thead><tbody></tbody></table>
             
             <div style="margin:24px 0 16px;"><strong style="font-size:13px;">💬 Lịch tương tác</strong></div>
-            <table id="interactsTable"><thead><tr><th>Thứ</th><th>Giờ</th><th>Nhóm</th><th style="width:120px;"></th></tr></thead><tbody></tbody></table>
+            <table id="interactsTable"><thead><tr><th>Ngày</th><th>Giờ</th><th>Nhóm</th><th style="width:120px;"></th></tr></thead><tbody></tbody></table>
           </div>
         </div>
       </main>
@@ -322,8 +353,8 @@
     <div id="editPostModal" class="modal-overlay">      <div class="modal-box">
         <h3><span>✏️</span> Sửa lịch đăng bài</h3>
         <div class="field-grid field-grid-2">
-          <label class="field"><span>Thứ</span><input id="editThu" placeholder="Thứ 7" /></label>
-          <label class="field"><span>Giờ</span><input id="editGio" placeholder="17:00" /></label>
+          <label class="field"><span>📅 Ngày đăng</span><input id="editThu" type="date" /></label>
+          <label class="field"><span>⏰ Giờ</span><input id="editGio" type="time" /></label>
           <label class="field"><span>Kiểu đăng</span>
             <select id="editMode"><option value="topic">Theo chủ đề</option><option value="content">Theo nội dung</option></select>
           </label>
@@ -339,8 +370,36 @@
               <input id="editGiuNguyen" type="checkbox" checked /><span>Giữ nguyên gốc</span>
             </label>
             <label class="checkbox-inline">
-              <input id="editDangKemAnh" type="checkbox" /><span>Đính kèm ảnh</span>
+              <input id="editDangKemAnh" type="checkbox" onchange="toggleEditSchedImageSection(this.checked)" /><span>Đính kèm ảnh</span>
             </label>
+          </div>
+          <div id="editSchedImageSection" class="field-full" style="display:none;margin-top:10px;padding:14px;background:var(--bg-soft);border-radius:var(--radius-sm);border:1px solid var(--border-soft);">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:10px;">🖼 Cài đặt ảnh</div>
+            <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
+              <label class="checkbox-inline">
+                <input type="radio" name="editSchedImageMode" value="random" checked onchange="onEditSchedImageModeChange()" />
+                <span>🎲 Random</span>
+              </label>
+              <label class="checkbox-inline">
+                <input type="radio" name="editSchedImageMode" value="manual" onchange="onEditSchedImageModeChange()" />
+                <span>📁 Chọn ảnh cụ thể</span>
+              </label>
+            </div>
+            <div id="editSchedImageRandomSection" style="font-size:12.5px;color:var(--text-muted);padding:10px 12px;background:var(--accent-soft);border-radius:8px;">
+              Bot tự chọn ảnh ngẫu nhiên từ thư mục ảnh trong Cài đặt.
+            </div>
+            <div id="editSchedImageManualSection" style="display:none;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+                <label id="editSchedUploadLabel" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-pill);border:1px dashed var(--border);background:var(--glass);font-size:12.5px;font-weight:600;color:var(--text-muted);">
+                  <input type="file" accept="image/*" multiple style="display:none;" id="editSchedImageUploadInput" onchange="uploadEditSchedImages(this.files)" />
+                  <span id="editSchedUploadText">⬆ Tải ảnh lên</span>
+                </label>
+                <span style="font-size:12px;color:var(--text-faint);">Click ảnh để chọn/bỏ</span>
+              </div>
+              <div id="editSchedImageGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;min-height:60px;">
+                <div style="color:var(--text-faint);font-size:12px;grid-column:1/-1;text-align:center;padding:16px;">Chưa có ảnh nào.</div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-actions">
@@ -428,12 +487,16 @@
           updateScheduleStats();
           _renderScheduleTable();
         };
+        // Khôi phục view đã lưu
+        const saved = (typeof getViewPref === 'function') ? getViewPref('schedules') : 'card';
+        if (saved !== 'card') setSchedulesView(saved);
       });
 
-      // ── View toggle cho schedules ──
+      // ── View toggle ──
       let _schedViewMode = 'card';
       function setSchedulesView(v) {
         _schedViewMode = v;
+        if (typeof setViewPref === 'function') setViewPref('schedules', v);
         document.getElementById('schedulesCardView').style.display = v === 'card' ? '' : 'none';
         document.getElementById('schedulesTableView').style.display = v === 'table' ? '' : 'none';
         document.getElementById('viewCardSchedules').classList.toggle('active', v === 'card');
@@ -505,6 +568,250 @@
       }
 
       function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+      // ── Image picker (Lịch Nhóm) — state riêng, KHÔNG chia sẻ với Lịch Fanpage ──
+      let _sched_selectedPaths = new Set();
+      let _sched_uploadedImages = [];
+      let _sched_createImages = [];
+      let _edit_sched_selectedPaths = new Set();
+      const _schedImageFilename = (value) => String(value || '').replace(/\\/g, '/').split('/').pop();
+      const _editSchedHasImage = (img) => {
+        const name = _schedImageFilename(img?.path || img?.filename || img?.url);
+        return [..._edit_sched_selectedPaths].some(path => path === img?.path || _schedImageFilename(path) === name);
+      };
+      const _removeEditSchedImage = (img) => {
+        const name = _schedImageFilename(img?.path || img?.filename || img?.url);
+        [..._edit_sched_selectedPaths].forEach(path => {
+          if (path === img?.path || _schedImageFilename(path) === name) _edit_sched_selectedPaths.delete(path);
+        });
+      };
+
+      function toggleSchedImageSection(checked) {
+        document.getElementById('schedImageSection').style.display = checked ? '' : 'none';
+        if (checked) onSchedImageModeChange();
+        if (!checked) {
+          // Bỏ tick → clear hết selection
+          _sched_selectedPaths.clear();
+          _renderSchedGallery();
+        }
+      }
+
+      function onSchedImageModeChange() {
+        const mode = document.querySelector('input[name="schedImageMode"]:checked')?.value || 'random';
+        document.getElementById('schedImageManualSection').style.display = mode === 'manual' ? '' : 'none';
+        document.getElementById('schedImageRandomSection').style.display = mode === 'random' ? '' : 'none';
+        if (mode === 'random') {
+          _sched_selectedPaths.clear();
+          _renderSchedGallery();
+        }
+      }
+
+      async function _loadSchedImages(includeUsed = false) {
+        try {
+          const API = `http://${window.location.hostname}:8000`;
+          const token = localStorage.getItem('fbbot-access-token');
+          const res = await fetch(`${API}/schedules/uploaded-images${includeUsed ? '?include_used=true' : ''}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          if (res.ok) {
+            _sched_uploadedImages = await res.json();
+            _sched_selectedPaths.clear(); // Luôn clear selection khi load lại từ server
+            _renderSchedGallery();
+          }
+        } catch(e) { console.warn('loadSchedImages:', e); }
+      }
+
+      function _getApiBase() {
+        return `http://${window.location.hostname}:8000`;
+      }
+
+      function _renderSchedGallery() {
+        const g = document.getElementById('schedImageGallery');
+        if (!g) return;
+        if (!_sched_createImages.length) {
+          g.innerHTML = '<div style="color:var(--text-faint);font-size:12px;grid-column:1/-1;text-align:center;padding:16px;">Chưa có ảnh nào. Upload ảnh để bắt đầu.</div>';
+          return;
+        }
+        g.onclick = (e) => {
+          const delBtn = e.target.closest('.sched-img-delete');
+          if (delBtn) {
+            e.stopPropagation();
+            deleteSchedImage(delBtn.dataset.filename);
+            return;
+          }
+          const thumb = e.target.closest('.sched-img-thumb');
+          if (!thumb) return;
+          const img = _sched_createImages[parseInt(thumb.dataset.idx, 10)];
+          if (img) _toggleSchedImg(img.path);
+        };
+        const apiBase = _getApiBase();
+        g.innerHTML = _sched_createImages.map((img, idx) => {
+          const sel = _sched_selectedPaths.has(img.path);
+          const imgUrl = img.url.startsWith('http') ? img.url : `${apiBase}${img.url}`;
+          return `<div class="sched-img-thumb" data-idx="${idx}"
+            style="position:relative;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:1;
+            border:2px solid ${sel ? 'var(--accent)' : 'var(--border-soft)'};
+            box-shadow:${sel ? '0 0 0 3px var(--accent-soft)' : 'none'};transition:all .15s;">
+            <img src="${imgUrl}" style="width:100%;height:100%;object-fit:cover;" loading="lazy" />
+            ${sel ? '<div style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;">✓</div>' : ''}
+            <button type="button" class="sched-img-delete" data-filename="${img.filename}"
+              style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:rgba(239,68,68,.9);border:none;color:#fff;font-size:10px;cursor:pointer;opacity:0;transition:opacity .15s;"
+              onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">✕</button>
+            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);color:#fff;font-size:10px;padding:2px 4px;">${Math.round(img.size/1024)}KB</div>
+          </div>`;
+        }).join('');
+      }
+
+      function toggleEditSchedImageSection(checked) {
+        const section = document.getElementById('editSchedImageSection');
+        if (section) section.style.display = checked ? '' : 'none';
+        if (checked && !_sched_uploadedImages.length) _loadSchedImages(true).then(() => _renderEditSchedGallery());
+        if (!checked) {
+          _edit_sched_selectedPaths.clear();
+          _renderEditSchedGallery();
+        }
+      }
+
+      function onEditSchedImageModeChange() {
+        const mode = document.querySelector('input[name="editSchedImageMode"]:checked')?.value || 'random';
+        document.getElementById('editSchedImageManualSection').style.display = mode === 'manual' ? '' : 'none';
+        document.getElementById('editSchedImageRandomSection').style.display = mode === 'random' ? '' : 'none';
+        if (mode === 'random') {
+          _edit_sched_selectedPaths.clear();
+          _renderEditSchedGallery();
+        }
+      }
+
+      function _renderEditSchedGallery() {
+        const g = document.getElementById('editSchedImageGallery');
+        if (!g) return;
+        const selectedImages = _sched_uploadedImages.filter(img => _editSchedHasImage(img));
+        if (!selectedImages.length) {
+          g.innerHTML = '<div style="color:var(--text-faint);font-size:12px;grid-column:1/-1;text-align:center;padding:16px;">Chưa có ảnh nào. Upload ảnh để bắt đầu.</div>';
+          return;
+        }
+        g.onclick = (e) => {
+          const thumb = e.target.closest('.edit-sched-img-thumb');
+          if (!thumb) return;
+          const img = selectedImages[parseInt(thumb.dataset.idx, 10)];
+          if (!img) return;
+          if (_editSchedHasImage(img)) _removeEditSchedImage(img);
+          else _edit_sched_selectedPaths.add(img.path);
+          _renderEditSchedGallery();
+        };
+        const apiBase = _getApiBase();
+        g.innerHTML = selectedImages.map((img, idx) => {
+          const sel = _editSchedHasImage(img);
+          const imgUrl = img.url.startsWith('http') ? img.url : `${apiBase}${img.url}`;
+          return `<div class="edit-sched-img-thumb" data-idx="${idx}"
+            style="position:relative;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:1;
+            border:2px solid ${sel ? 'var(--accent)' : 'var(--border-soft)'};
+            box-shadow:${sel ? '0 0 0 3px var(--accent-soft)' : 'none'};transition:all .15s;">
+            <img src="${imgUrl}" style="width:100%;height:100%;object-fit:cover;" loading="lazy" />
+            ${sel ? '<div style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;">✓</div>' : ''}
+            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);color:#fff;font-size:10px;padding:2px 4px;">${Math.round(img.size/1024)}KB</div>
+          </div>`;
+        }).join('');
+      }
+
+      async function uploadEditSchedImages(files) {
+        const before = new Set(_sched_uploadedImages.map(img => img.path));
+        await uploadSchedImages(files, true);
+        _sched_uploadedImages
+          .filter(img => !before.has(img.path))
+          .forEach(img => _edit_sched_selectedPaths.add(img.path));
+        _renderEditSchedGallery();
+      }
+
+      window.setEditSchedImageState = async function({ enabled, mode, paths }) {
+        const attachCb = document.getElementById('editDangKemAnh');
+        if (attachCb) attachCb.checked = !!enabled;
+        const section = document.getElementById('editSchedImageSection');
+        if (section) section.style.display = enabled ? '' : 'none';
+        const selectedMode = mode === 'manual' ? 'manual' : 'random';
+        const radio = document.querySelector(`input[name="editSchedImageMode"][value="${selectedMode}"]`);
+        if (radio) radio.checked = true;
+        _edit_sched_selectedPaths = new Set(Array.isArray(paths) ? paths : []);
+        if (enabled && !_sched_uploadedImages.length) await _loadSchedImages(true);
+        onEditSchedImageModeChange();
+        _renderEditSchedGallery();
+      };
+
+      window.getEditSchedImageSelection = function() {
+        return [..._edit_sched_selectedPaths];
+      };
+
+      function _toggleSchedImg(path) {
+        // Toggle đúng — không bị liên kết với fanpage
+        if (_sched_selectedPaths.has(path)) {
+          _sched_selectedPaths.delete(path);
+        } else {
+          _sched_selectedPaths.add(path);
+        }
+        _renderSchedGallery();
+      }
+
+      async function deleteSchedImage(filename) {
+        if (!filename) return;
+        _sched_createImages = _sched_createImages.filter(img => img.filename !== filename);
+        const removePath = [..._sched_selectedPaths].find(p => p.includes(filename));
+        if (removePath) _sched_selectedPaths.delete(removePath);
+        _renderSchedGallery();
+      }
+
+      async function uploadSchedImages(files, forEdit = false) {
+        if (!files || !files.length) return;
+        const input = document.getElementById(forEdit ? 'editSchedImageUploadInput' : 'schedImageUploadInput');
+        const txt = document.getElementById(forEdit ? 'editSchedUploadText' : 'schedUploadText');
+        const label = document.getElementById(forEdit ? 'editSchedUploadLabel' : 'schedUploadLabel');
+        if (!label) return;
+        label.style.pointerEvents = 'none';
+        if (txt) txt.textContent = '⏳ Đang upload...';
+        const API = `http://${window.location.hostname}:8000`;
+        const token = localStorage.getItem('fbbot-access-token');
+        let uploaded = 0;
+        for (const file of files) {
+          try {
+            const fd = new FormData(); fd.append('file', file);
+            const res = await fetch(`${API}/schedules/upload-image`, {
+              method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd
+            });
+            if (res.ok) {
+              const img = await res.json();
+              _sched_uploadedImages.push(img);
+              if (!forEdit) _sched_createImages.push(img);
+              uploaded++;
+            }
+          } catch(e) {}
+        }
+        if (input) input.value = '';
+        if (txt) txt.textContent = '⬆ Tải ảnh lên';
+        label.style.pointerEvents = '';
+        if (uploaded > 0) { _renderSchedGallery(); if (typeof showToast==='function') showToast('success', `Đã upload ${uploaded} ảnh`,''); }
+      }
+
+      function _resetSchedImagePicker() {
+        _sched_selectedPaths.clear();
+        _sched_createImages = [];
+        const attachCb = document.getElementById('scheduleDangKemAnh');
+        if (attachCb) attachCb.checked = false;
+        const section = document.getElementById('schedImageSection');
+        if (section) section.style.display = 'none';
+        const radioRandom = document.querySelector('input[name="schedImageMode"][value="random"]');
+        if (radioRandom) radioRandom.checked = true;
+        onSchedImageModeChange();
+        _renderSchedGallery();
+      }
+      window._resetSchedImagePicker = _resetSchedImagePicker;
+
+      // Gắn image picker vào global để app.js có thể lấy khi submit
+      window.getSchedImageSelection = function() {
+        return [..._sched_selectedPaths];
+      };
+
+      document.addEventListener('DOMContentLoaded', () => {
+        _resetSchedImagePicker();
+      });
     </script>
   </body>
 </html>

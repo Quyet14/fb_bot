@@ -30,6 +30,8 @@ if settings.USE_MONGODB:
             username=doc["username"],
             full_name=doc.get("full_name"),
             email=doc.get("email"),
+            bio=doc.get("bio"),
+            avatar_url=doc.get("avatar_url"),
             role=doc.get("role", "admin"),
             is_active=doc.get("is_active", True),
             created_at=doc.get("created_at", datetime.datetime.utcnow()),

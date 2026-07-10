@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FB Bot Console — Tự động hoá Fanpage &amp; Nhóm Facebook</title>
   <link rel="stylesheet" href="/html/styles.css" />
+  
+  <!-- Config API URL cho remote access -->
+  <script>
+    // Cấu hình API endpoint:
+    // - Nếu từ localhost: sẽ tìm API trên cùng host (port 8000 hoặc 8005)
+    // - Nếu từ ngoài (ngrok): sẽ gọi API qua IP local
+    // Sửa giá trị này nếu IP khác
+    window.FBBOT_API_URL = 'http://192.168.1.149:8000';
+  </script>
 </head>
 <body class="page-landing">
 
@@ -23,7 +32,7 @@
       </ul>
     </nav>
     <div class="nav-actions">
-      <a href="login.html" class="btn btn-ghost">Đăng nhập</a>
+      <a href="/login" class="btn btn-ghost">Đăng nhập</a>
       <a href="#" class="btn btn-primary" onclick="goToDashboard(event)">Vào Dashboard</a>
     </div>
     <button class="nav-toggle" aria-label="Mở menu">☰</button>
@@ -41,7 +50,7 @@
           tất cả điều khiển từ một bảng điều khiển duy nhất, theo dõi real-time.
         </p>
         <div class="hero-actions">
-          <a href="register.html" class="btn btn-primary btn-lg">Bắt đầu miễn phí →</a>
+          <a href="/register" class="btn btn-primary btn-lg">Bắt đầu miễn phí →</a>
           <a href="#how-it-works" class="btn btn-ghost btn-lg">Xem cách hoạt động</a>
         </div>
         <div class="hero-trust">
@@ -213,7 +222,7 @@
         <div class="footer-col">
           <h4>Truy cập</h4>
           <a href="#" onclick="goToDashboard(event)">Dashboard</a>
-          <a href="login.html">Đăng nhập</a>
+          <a href="/login">Đăng nhập</a>
         </div>
       </div>
     </div>
@@ -228,11 +237,7 @@
     function goToDashboard(e) {
       e.preventDefault();
       var token = localStorage.getItem('fbbot-access-token');
-      if (token) {
-        window.location.href = 'dashboard.html';
-      } else {
-        window.location.href = 'login.html';
-      }
+      window.location.href = token ? '/dashboard' : '/login';
     }
   </script>
 </body>

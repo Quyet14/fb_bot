@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """Auth router: đăng ký, đăng nhập, social login, logout, refresh."""
-from fastapi import APIRouter, Depends, HTTPException, status
+import os
+import uuid
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from jose import JWTError
 
 from app.config import settings
@@ -12,6 +15,11 @@ from app.auth.schemas import (
 from app.auth import auth_crud, jwt_utils, pwd_utils
 
 router = APIRouter(prefix="/auth", tags=["Xác thực"])
+
+
+UPLOAD_IMAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads", "images")
+AVATAR_SUBDIR = "avatars"
+ALLOWED_AVATAR_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
 
 def _get_db_or_none():
@@ -184,10 +192,10 @@ def update_profile(
 ):
     db = _get_db_or_none()
     try:
-        payload = {k: v for k, v in data.model_dump().items() if v is not None}
+        payload = data.model_dump(exclude_unset=True)
 
         # Kiểm tra email trùng với user khác
-        if "email" in payload:
+        if payload.get("email"):
             existing = auth_crud.get_user_by_email(db, payload["email"])
             if existing and existing.id != current_user.id:
                 raise HTTPException(status_code=409, detail="Email đã được sử dụng bởi tài khoản khác")
@@ -202,6 +210,44 @@ def update_profile(
 
 
 # ── CHANGE PASSWORD ────────────────────────────────────────────
+@router.post("/profile/avatar", response_model=UserOut)
+async def upload_profile_avatar(
+    file: UploadFile = File(...),
+    current_user: UserOut = Depends(jwt_utils.get_current_user),
+):
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in ALLOWED_AVATAR_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Chi ho tro anh jpg, png, webp hoac gif")
+
+    content_type = (file.content_type or "").lower()
+    if content_type and not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File tai len phai la anh")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="File anh rong")
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Anh dai dien toi da 5MB")
+
+    user_dir = os.path.join(UPLOAD_IMAGES_DIR, AVATAR_SUBDIR, current_user.id)
+    os.makedirs(user_dir, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}{ext}"
+    filepath = os.path.join(user_dir, filename)
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    avatar_url = f"/uploads/images/{AVATAR_SUBDIR}/{current_user.id}/{filename}"
+    db = _get_db_or_none()
+    try:
+        updated = auth_crud.update_profile(db, current_user.id, {"avatar_url": avatar_url})
+        if not updated:
+            raise HTTPException(status_code=404, detail="Khong tim thay tai khoan")
+        return updated
+    finally:
+        if db is not None:
+            db.close()
+
+
 @router.put("/change-password", status_code=204)
 def change_password(
     data: ChangePasswordRequest,

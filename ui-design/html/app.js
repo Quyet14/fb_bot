@@ -340,11 +340,18 @@ function _renderDashboardEnhanced() {
 
 async function loadData() {
   try {
-    state.groups = await loadGroups();
-    state.topics = await loadTopics();
-    state.userContents = await loadUserContents();
-    state.schedules = await loadSchedules();
-    state.logs = await loadLogs();
+    const [groups, topics, userContents, schedules, logs] = await Promise.all([
+      loadGroups(),
+      loadTopics(),
+      loadUserContents(),
+      loadSchedules(),
+      loadLogs(),
+    ]);
+    state.groups = groups;
+    state.topics = topics;
+    state.userContents = userContents;
+    state.schedules = schedules;
+    state.logs = logs;
 
     renderGroups();
     renderTopics();
@@ -437,6 +444,11 @@ async function handleScheduleFormSubmit(event) {
         return;
       }
 
+      const imageMode = document.querySelector('input[name="schedImageMode"]:checked')?.value || 'random';
+      const imagePaths = dangKemAnh && imageMode === 'manual'
+        ? (typeof window.getSchedImageSelection === 'function' ? window.getSchedImageSelection() : (window._sched_selectedPaths ? [...window._sched_selectedPaths] : []))
+        : [];
+
       if (mode === 'content') {
         if (!contentText) {
           setStatus('Vui lòng nhập nội dung bài đăng.', true);
@@ -449,6 +461,8 @@ async function handleScheduleFormSubmit(event) {
           content_id: savedContent.id,
           giu_nguyen_goc: giuNguyenGoc,
           dang_kem_anh: dangKemAnh,
+          image_mode: imageMode,
+          image_paths: imagePaths,
           active: true,
           group_ids: groupIds,
         });
@@ -457,7 +471,16 @@ async function handleScheduleFormSubmit(event) {
           setStatus('Vui lòng chọn chủ đề.', true);
           return;
         }
-        await createPostSchedule({ thu, gio, topic_id: topicId, dang_kem_anh: dangKemAnh, active: true, group_ids: groupIds });
+        await createPostSchedule({
+          thu,
+          gio,
+          topic_id: topicId,
+          dang_kem_anh: dangKemAnh,
+          image_mode: imageMode,
+          image_paths: imagePaths,
+          active: true,
+          group_ids: groupIds,
+        });
       }
 
     } else if (type === 'repost') {
@@ -479,6 +502,7 @@ async function handleScheduleFormSubmit(event) {
     }
 
     document.querySelector('#scheduleForm')?.reset();
+    if (typeof window._resetSchedImagePicker === 'function') window._resetSchedImagePicker();
     updateScheduleFormFields();
     await loadData();
     const loaiLabel = type === 'dang-bai' ? 'Đăng bài' : type === 'repost' ? 'Repost' : 'Tương tác';
@@ -630,6 +654,13 @@ function openEditPostModal(schedule) {
   document.querySelector('#editThu').value = schedule.thu || '';
   document.querySelector('#editGio').value = schedule.gio || '';
   document.querySelector('#editDangKemAnh').checked = !!schedule.dang_kem_anh;
+  if (typeof window.setEditSchedImageState === 'function') {
+    window.setEditSchedImageState({
+      enabled: !!schedule.dang_kem_anh,
+      mode: schedule.image_mode || 'random',
+      paths: schedule.image_paths || [],
+    });
+  }
 
   // Populate topic select
   const topicSel = document.querySelector('#editTopicId');
@@ -680,11 +711,27 @@ async function submitEditPost() {
   const mode = document.querySelector('#editMode').value;
   const groupIds = parseIds(document.querySelector('#editGroupIds').value || '');
   const dangKemAnh = document.querySelector('#editDangKemAnh').checked;
+  const imageMode = document.querySelector('input[name="editSchedImageMode"]:checked')?.value || 'random';
+  const imagePaths = dangKemAnh && imageMode === 'manual'
+    ? (typeof window.getEditSchedImageSelection === 'function' ? window.getEditSchedImageSelection() : [])
+    : [];
 
   if (!thu || !gio) { alert('Vui lòng nhập thứ và giờ.'); return; }
   if (!groupIds.length) { alert('Vui lòng nhập ít nhất 1 nhóm ID.'); return; }
 
-  const payload = { thu, gio, dang_kem_anh: dangKemAnh, group_ids: groupIds };
+  if (dangKemAnh && imageMode === 'manual' && !imagePaths.length) {
+    alert('Vui long chon it nhat 1 anh hoac chuyen sang Random.');
+    return;
+  }
+
+  const payload = {
+    thu,
+    gio,
+    dang_kem_anh: dangKemAnh,
+    image_mode: imageMode,
+    image_paths: imagePaths,
+    group_ids: groupIds,
+  };
 
   try {
     if (mode === 'topic') {
@@ -931,7 +978,7 @@ async function saveSettings() {
   if (wtEl?.value)  payload.thoi_gian_cho_giua_cac_nhom = Number(wtEl.value);
   if (llEl?.value)  payload.gioi_han_like    = Number(llEl.value);
   if (clEl?.value)  payload.gioi_han_comment = Number(clEl.value);
-  if (imgEl?.value) payload.thu_muc_anh      = imgEl.value.trim();
+  if (imgEl)         payload.thu_muc_anh      = imgEl.value.trim();
   if (hlEl)         payload.headless_mode    = hlEl.checked;
 
   const saveBtn = document.querySelector('#saveSettingsBtn');
@@ -949,9 +996,55 @@ async function saveSettings() {
   }
 }
 
+async function chooseImageDirectory() {
+  const host = window.location.hostname;
+  const canOpenServerDialog = ['localhost', '127.0.0.1'].includes(host) || /^192\.168\.|^10\.|^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  if (!canOpenServerDialog) {
+    const msg = 'Qua ngrok/dien thoai khong mo duoc hop thoai folder local. Hay nhap duong dan tren may dang chay bot.';
+    if (typeof showToast === 'function') showToast('info', 'Nhap duong dan thu muc', msg);
+    else alert(msg);
+    document.querySelector('#settingImageDir')?.focus();
+    return;
+  }
+  const imgEl = document.querySelector('#settingImageDir');
+  const btn = document.querySelector('button[onclick="chooseImageDirectory()"]');
+  const oldText = btn?.innerHTML;
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = 'Đang mở...';
+    }
+    const result = await selectImageDirectory();
+    if (result?.path && imgEl) {
+      imgEl.value = result.path;
+      imgEl.focus();
+    }
+  } catch (err) {
+    if (typeof showToast === 'function') showToast('error', 'Không mở được chọn thư mục', err.message || '');
+    else alert('Không mở được chọn thư mục: ' + (err.message || ''));
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = oldText || '📁 Chọn thư mục';
+    }
+  }
+}
+
+function syncImageDirectoryPickerMode() {
+  const host = window.location.hostname;
+  const canOpenServerDialog = ['localhost', '127.0.0.1'].includes(host) || /^192\.168\.|^10\.|^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  const btn = document.querySelector('#chooseImageDirBtn');
+  if (!btn) return;
+  if (!canOpenServerDialog) {
+    btn.textContent = 'Nhập tay';
+    btn.title = 'Trình duyệt từ xa không thể chọn thư mục local. Nhập đường dẫn trên máy chạy bot.';
+  }
+}
+
 // Auto-load settings page
 document.addEventListener('DOMContentLoaded', () => {
   if (document.querySelector('#settingWaitTime')) {
+    syncImageDirectoryPickerMode();
     loadSettingsPage();
   }
 });

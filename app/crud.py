@@ -143,6 +143,7 @@ else:
 
     import datetime
     from sqlalchemy.orm import Session
+    import json
     from app import models
 
     def list_groups(db: Session):
@@ -221,9 +222,14 @@ else:
     def create_post_schedule(db: Session, data: schemas.PostScheduleCreate):
         obj = models.PostSchedule(
             thu=data.thu, gio=data.gio, topic_id=data.topic_id,
-            dang_kem_anh=data.dang_kem_anh, active=data.active,
+            dang_kem_anh=data.dang_kem_anh, image_mode=getattr(data, 'image_mode', 'random'), active=data.active,
             groups=get_groups_by_ids(db, data.group_ids),
         )
+        # set image paths if provided
+        try:
+            obj.image_paths = getattr(data, 'image_paths', []) or []
+        except Exception:
+            obj.image_paths = []
         db.add(obj)
         db.commit()
         db.refresh(obj)
@@ -236,6 +242,11 @@ else:
         payload = data.model_dump(exclude_unset=True)
         if "group_ids" in payload:
             obj.groups = get_groups_by_ids(db, payload.pop("group_ids"))
+        if "image_paths" in payload:
+            try:
+                obj.image_paths = payload.pop("image_paths") or []
+            except Exception:
+                obj.image_paths = []
         for k, v in payload.items():
             setattr(obj, k, v)
         db.commit()
@@ -338,9 +349,13 @@ else:
         obj = models.FanpageSchedule(
             thu=data.thu, gio=data.gio, topic_id=data.topic_id,
             content_id=data.content_id, giu_nguyen_goc=data.giu_nguyen_goc,
-            dang_kem_anh=data.dang_kem_anh, active=data.active,
+            dang_kem_anh=data.dang_kem_anh, image_mode=getattr(data, 'image_mode', 'random'), active=data.active,
             fanpages=fanpages,
         )
+        try:
+            obj.image_paths = getattr(data, 'image_paths', []) or []
+        except Exception:
+            obj.image_paths = []
         db.add(obj)
         db.commit()
         db.refresh(obj)
@@ -353,6 +368,11 @@ else:
         payload = data.model_dump(exclude_unset=True)
         if "fanpage_ids" in payload:
             obj.fanpages = get_groups_by_ids(db, payload.pop("fanpage_ids"))
+        if "image_paths" in payload:
+            try:
+                obj.image_paths = payload.pop("image_paths") or []
+            except Exception:
+                obj.image_paths = []
         for k, v in payload.items():
             setattr(obj, k, v)
         db.commit()

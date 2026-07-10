@@ -12,6 +12,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from app.bot.gemini import goi_gemini_viet_bai, goi_gemini_viet_lai_bai
 from app.bot.browser import dong_chrome, tao_driver, paste_vao_element, lay_anh_ngau_nhien
 from app.config import settings as app_config
+import requests
+import uuid
+from urllib.parse import urlparse
+from pathlib import Path
 
 
 def dang_mot_nhom(driver, wait, url_nhom, noi_dung, duong_dan_anh=None):
@@ -80,7 +84,7 @@ def dang_mot_nhom(driver, wait, url_nhom, noi_dung, duong_dan_anh=None):
             elif isinstance(duong_dan_anh, list):
                 danh_sach_anh = duong_dan_anh
 
-            danh_sach_anh_hop_le = [p.replace('\\', '/') for p in danh_sach_anh if os.path.exists(p)]
+            danh_sach_anh_hop_le = [os.path.abspath(p) for p in danh_sach_anh if os.path.exists(p)]
 
             if danh_sach_anh_hop_le:
                 print(f"  -> Dang dinh kem {len(danh_sach_anh_hop_le)} anh...")
@@ -177,6 +181,7 @@ def thuc_thi_tien_trinh_dang(
     thoi_gian_cho_giua_cac_nhom,
     noi_dung_goc=None,
     giu_nguyen_goc: bool = True,
+    anh_paths_override=None,   # list[str] | None — ảnh chỉ định, bỏ qua random nếu có
 ):
     """Chạy đăng bài.
 
@@ -210,7 +215,37 @@ def thuc_thi_tien_trinh_dang(
 
     duong_dan_anh = None
     if dang_kem_anh:
-        duong_dan_anh = lay_anh_ngau_nhien(thu_muc_anh)
+        if anh_paths_override:
+            duong_dan_anh = anh_paths_override  # list ảnh chỉ định
+        else:
+            duong_dan_anh = lay_anh_ngau_nhien(thu_muc_anh)  # random
+
+    # If duong_dan_anh contains remote URLs, download them to temp files for Selenium
+    temp_files_created = []
+    def _maybe_download(p):
+        if not isinstance(p, str):
+            return p
+        if p.startswith('http://') or p.startswith('https://'):
+            try:
+                parsed = urlparse(p)
+                ext = Path(parsed.path).suffix or '.jpg'
+                tmpdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'uploads', 'temp')
+                os.makedirs(tmpdir, exist_ok=True)
+                tmpf = os.path.join(tmpdir, f"{uuid.uuid4().hex}{ext}")
+                r = requests.get(p, stream=True, timeout=20)
+                if not r.ok:
+                    print(f"  -> Cannot download image {p}: {r.status_code}")
+                    return None
+                with open(tmpf, 'wb') as f:
+                    for chunk in r.iter_content(1024 * 8):
+                        if chunk:
+                            f.write(chunk)
+                temp_files_created.append(tmpf)
+                return tmpf
+            except Exception as e:
+                print(f"  -> Download image exception: {e}")
+                return None
+        return p
 
     driver = None
     ket_qua_tung_nhom = []
@@ -226,7 +261,18 @@ def thuc_thi_tien_trinh_dang(
 
         tong = len(nhom_urls)
         for i, url in enumerate(nhom_urls):
-            ket_qua = dang_mot_nhom(driver, wait, url, noi_dung, duong_dan_anh)
+            # Before posting, ensure any remote images are downloaded and paths passed to Selenium
+            daftar = None
+            if isinstance(duong_dan_anh, list):
+                daftar = [_maybe_download(p) for p in duong_dan_anh]
+                daftar = [p for p in daftar if p]
+            elif isinstance(duong_dan_anh, str):
+                tmp = _maybe_download(duong_dan_anh)
+                daftar = [tmp] if tmp else []
+            else:
+                daftar = duong_dan_anh
+
+            ket_qua = dang_mot_nhom(driver, wait, url, noi_dung, daftar)
             ket_qua_tung_nhom.append(f"{url}: {ket_qua}")
             if i < tong - 1 and ket_qua != "PENDING":
                 time.sleep(thoi_gian_cho_giua_cac_nhom)
@@ -238,6 +284,13 @@ def thuc_thi_tien_trinh_dang(
     finally:
         if driver:
             driver.quit()
+        # Cleanup any temp files we created
+        for t in temp_files_created:
+            try:
+                if os.path.exists(t):
+                    os.remove(t)
+            except Exception:
+                pass
 
 
 
@@ -321,7 +374,7 @@ def dang_mot_fanpage(driver, wait, url_fanpage, noi_dung, duong_dan_anh=None):
     """
     if not url_fanpage or not isinstance(url_fanpage, str):
         print(f"  -> Loi fanpage: url invalid: {url_fanpage!r}")
-        return False
+        return "ERROR_INVALID_FANPAGE_URL"
 
     try:
         # Lấy page_id / slug từ URL
@@ -410,7 +463,7 @@ def dang_mot_fanpage(driver, wait, url_fanpage, noi_dung, duong_dan_anh=None):
                 print(f"  -> Screenshot: C:/fanpage_debug_{page_slug}_{ts}.png")
             except Exception:
                 pass
-            return False
+            return "ERROR_COMPOSER_NOT_FOUND"
 
         # ── Nhập nội dung ──────────────────────────────────────────────
         driver.execute_script("arguments[0].click();", o_nhap)
@@ -425,22 +478,304 @@ def dang_mot_fanpage(driver, wait, url_fanpage, noi_dung, duong_dan_anh=None):
         # ── Đính kèm ảnh ───────────────────────────────────────────────
         if duong_dan_anh:
             danh_sach_anh = [duong_dan_anh] if isinstance(duong_dan_anh, str) else duong_dan_anh
-            danh_sach_anh_hop_le = [p.replace('\\', '/') for p in danh_sach_anh if os.path.exists(p)]
-            if danh_sach_anh_hop_le:
-                try:
-                    nut_anh = WebDriverWait(driver, 6).until(EC.element_to_be_clickable((By.XPATH,
-                        '//div[@aria-label="Ảnh/video" or @aria-label="Photo/video" '
-                        'or @aria-label="Photo" or @aria-label="Ảnh" '
-                        'or @aria-label="Add photos or videos" or @aria-label="Thêm ảnh hoặc video"]'
-                    )))
-                    driver.execute_script("arguments[0].click();", nut_anh)
-                    input_file = WebDriverWait(driver, 8).until(
-                        EC.presence_of_element_located((By.XPATH, '//input[@type="file"]'))
-                    )
+            danh_sach_anh_hop_le = [os.path.abspath(p) for p in danh_sach_anh if os.path.exists(p)]
+            if len(danh_sach_anh_hop_le) != len(danh_sach_anh):
+                print(f"  -> FAIL: Co yeu cau anh nhung file khong ton tai: {danh_sach_anh}")
+                return "ERROR_IMAGE_FILE_MISSING"
+
+            try:
+                def _attach_fail(code: str):
+                    try:
+                        ts = int(time.time())
+                        debug_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads", "debug")
+                        os.makedirs(debug_dir, exist_ok=True)
+                        safe_slug = "".join(ch if ch.isalnum() or ch in ("-", "_", ".") else "_" for ch in page_slug)
+                        path = os.path.join(debug_dir, f"fanpage_attach_fail_{safe_slug}_{code}_{ts}.png")
+                        driver.save_screenshot(path)
+                        print(f"  -> Screenshot attach fail: {path}")
+                        try:
+                            labels = driver.execute_script("""
+                                return Array.from(document.querySelectorAll('button, div[role="button"], input[type="file"]'))
+                                  .slice(0, 300)
+                                  .map((el, i) => ({
+                                    i,
+                                    tag: el.tagName,
+                                    role: el.getAttribute('role') || '',
+                                    aria: el.getAttribute('aria-label') || '',
+                                    text: (el.innerText || el.value || '').trim().slice(0, 180),
+                                    type: el.getAttribute('type') || '',
+                                    accept: el.getAttribute('accept') || ''
+                                  }));
+                            """)
+                            txt_path = os.path.join(debug_dir, f"fanpage_attach_fail_{safe_slug}_{code}_{ts}.json")
+                            import json
+                            with open(txt_path, "w", encoding="utf-8") as f:
+                                json.dump(labels, f, ensure_ascii=False, indent=2)
+                            print(f"  -> Attach debug labels: {txt_path}")
+                        except Exception as e:
+                            print(f"  -> Khong ghi duoc attach debug labels: {type(e).__name__}: {e}")
+                    except Exception:
+                        pass
+                    return code
+
+                def _find_file_input():
+                    for xpath in [
+                        '//input[@type="file" and not(@disabled)]',
+                        '//input[@type="file"]',
+                        '//div[@role="dialog"]//input[@type="file"]',
+                        '//input[@type="file" and contains(@accept, "image")]',
+                    ]:
+                        try:
+                            el = driver.find_element(By.XPATH, xpath)
+                            if el is not None:
+                                return el
+                        except Exception:
+                            continue
+                    return None
+
+                dialog_upload_sentinel = "__WINDOWS_FILE_DIALOG_UPLOADED__"
+
+                def _try_windows_file_dialog_upload(paths):
+                    try:
+                        import pyautogui
+                        import pyperclip
+
+                        time.sleep(1)
+                        active_title = ""
+                        try:
+                            active_window = pyautogui.getActiveWindow()
+                            active_title = active_window.title if active_window else ""
+                        except Exception:
+                            active_title = ""
+
+                        if not active_title:
+                            print("  -> Khong xac dinh duoc hop chon file Windows dang active")
+                            return False
+
+                        title_normalized = active_title.lower()
+                        dialog_keywords = (
+                            "open",
+                            "choose",
+                            "file upload",
+                            "upload",
+                            "mở",
+                            "mo",
+                            "chọn",
+                            "chon",
+                        )
+                        if active_title and not any(k in title_normalized for k in dialog_keywords):
+                            print(f"  -> Active window khong phai hop chon file: {active_title}")
+                            return False
+
+                        paths_text = " ".join(f'"{p}"' for p in paths)
+                        pyperclip.copy(paths_text)
+                        pyautogui.hotkey("ctrl", "v")
+                        time.sleep(0.5)
+                        pyautogui.press("enter")
+                        time.sleep(4 + len(paths))
+                        print("  -> Da gui anh qua hop chon file Windows")
+                        return True
+                    except Exception as e:
+                        print(f"  -> Upload qua hop chon file Windows loi: {type(e).__name__}: {e}")
+                        return False
+
+                def _count_large_media_previews():
+                    try:
+                        return int(driver.execute_script("""
+                            return Array.from(document.querySelectorAll('img')).filter((img) => {
+                              const rect = img.getBoundingClientRect();
+                              const style = window.getComputedStyle(img);
+                              const src = img.currentSrc || img.src || '';
+                              if (!src) return false;
+                              if (style.display === 'none' || style.visibility === 'hidden') return false;
+                              if (rect.width < 70 || rect.height < 70) return false;
+                              if (rect.bottom <= 0 || rect.right <= 0) return false;
+                              if (rect.top >= window.innerHeight || rect.left >= window.innerWidth) return false;
+                              return true;
+                            }).length;
+                        """) or 0)
+                    except Exception:
+                        return 0
+
+                preview_count_before_upload = _count_large_media_previews()
+                print(f"  -> Preview anh lon truoc upload: {preview_count_before_upload}")
+
+                input_file = _find_file_input()
+                if input_file is None:
+                    def _click_attach_and_find_input(nut_anh):
+                        click_methods = []
+                        try:
+                            from selenium.webdriver.common.action_chains import ActionChains
+                            click_methods.append(lambda: ActionChains(driver).move_to_element(nut_anh).pause(0.2).click().perform())
+                        except Exception:
+                            pass
+                        click_methods.extend([
+                            lambda: nut_anh.click(),
+                            lambda: driver.execute_script("""
+                                arguments[0].dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}));
+                                arguments[0].dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}));
+                                arguments[0].dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}));
+                            """, nut_anh),
+                            lambda: driver.execute_script("arguments[0].click();", nut_anh),
+                        ])
+
+                        try:
+                            driver.execute_script("arguments[0].scrollIntoView({block:'center'});", nut_anh)
+                            time.sleep(0.5)
+                        except Exception:
+                            pass
+
+                        for do_click in click_methods:
+                            try:
+                                do_click()
+                                time.sleep(2)
+                                found_input = _find_file_input()
+                                if found_input is not None:
+                                    return found_input
+                                if _try_windows_file_dialog_upload(danh_sach_anh_hop_le):
+                                    return dialog_upload_sentinel
+                            except Exception as e:
+                                print(f"  -> Thu click nut them anh/video loi: {type(e).__name__}: {e}")
+                        return None
+
+                    button_xpaths = [
+                        '//div[@role="button" and (@aria-label="Add media" or @aria-label="Media" or @aria-label="Add photo" or @aria-label="Add photo/video" or @aria-label="Upload from desktop")]',
+                        '//button[@aria-label="Add media" or @aria-label="Media" or @aria-label="Add photo" or @aria-label="Add photo/video" or @aria-label="Upload from desktop"]',
+                        '//*[self::div or self::button][@role="button" and (contains(normalize-space(.), "Add media") or contains(normalize-space(.), "Media") or contains(normalize-space(.), "Add photo") or contains(normalize-space(.), "Upload from desktop"))]',
+                        '//*[self::div or self::button][@role="button" and (contains(normalize-space(.), "Thêm file phương tiện") or contains(normalize-space(.), "File phương tiện") or contains(normalize-space(.), "Tải lên từ máy tính"))]',
+                        '//div[@aria-label="Ảnh/video" or @aria-label="Ảnh" or @aria-label="Thêm ảnh hoặc video" or @aria-label="Thêm ảnh/video"]',
+                        '//button[contains(., "Ảnh") or contains(., "Thêm ảnh") or contains(., "Photo") or contains(., "Photo/video")]',
+                        '//div[contains(@role, "button") and (contains(normalize-space(.), "Ảnh") or contains(normalize-space(.), "Thêm ảnh") or contains(normalize-space(.), "Photo") or contains(normalize-space(.), "Image"))]',
+                        '//div[@aria-label="Ảnh/video" or @aria-label="Photo/video" or @aria-label="Photo" or @aria-label="Ảnh" or @aria-label="Add photos or videos" or @aria-label="Thêm ảnh hoặc video"]',
+                        '//button[contains(., "Ảnh") or contains(., "Photo") or contains(., "Photo/video") or contains(., "Image")]',
+                        '//div[contains(@role, "button") and (contains(normalize-space(.), "Ảnh") or contains(normalize-space(.), "Photo") or contains(normalize-space(.), "Image"))]',
+                    ]
+                    attached = False
+                    attach_button_seen = False
+                    for xpath in button_xpaths:
+                        try:
+                            nut_anh = WebDriverWait(driver, 6).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+                            attach_button_seen = True
+                            input_file = _click_attach_and_find_input(nut_anh)
+                            if input_file is not None:
+                                attached = True
+                                break
+                        except Exception:
+                            continue
+                    if not attached:
+                        try:
+                            nut_anh = driver.execute_script("""
+                                const strip = (value) => (value || '')
+                                  .normalize('NFD')
+                                  .replace(/[\\u0300-\\u036f]/g, '')
+                                  .toLowerCase();
+                                const buttons = Array.from(
+                                  document.querySelectorAll('button, div[role="button"]')
+                                );
+                                return buttons.find((el) => {
+                                  const text = strip([
+                                    el.innerText,
+                                    el.textContent,
+                                    el.getAttribute('aria-label'),
+                                    el.getAttribute('title')
+                                  ].filter(Boolean).join(' '));
+                                  return (
+                                    text.includes('them anh/video') ||
+                                    text.includes('them anh') ||
+                                    text.includes('anh/video') ||
+                                    text.includes('file phuong tien') ||
+                                    text.includes('chia se anh') ||
+                                    text.includes('add photo') ||
+                                    text.includes('add media') ||
+                                    text.includes('photo/video') ||
+                                    text.includes('upload from desktop')
+                                  );
+                                }) || null;
+                            """)
+                            if nut_anh is not None:
+                                attach_button_seen = True
+                                input_file = _click_attach_and_find_input(nut_anh)
+                                if input_file is not None:
+                                    attached = True
+                                    print("  -> Da mo input anh/video bang JS fallback")
+                        except Exception as e:
+                            print(f"  -> JS fallback tim nut them anh/video loi: {type(e).__name__}: {e}")
+                    if not attached:
+                        if attach_button_seen:
+                            print(f"  -> FAIL: Da thay nut attach anh nhung click khong mo input file")
+                            return _attach_fail("ERROR_ATTACH_INPUT_AFTER_CLICK_NOT_FOUND")
+                        print(f"  -> FAIL: Khong tim thay nut attach anh hoac khong mo duoc dialog")
+                        return _attach_fail("ERROR_ATTACH_BUTTON_NOT_FOUND")
+
+                if input_file is None:
+                    print(f"  -> FAIL: Khong tim thay input file de dinh kem anh")
+                    return _attach_fail("ERROR_FILE_INPUT_NOT_FOUND")
+
+                if input_file == dialog_upload_sentinel:
+                    print("  -> Bo qua send_keys vi da upload qua hop chon file Windows")
+                else:
+                    try:
+                        driver.execute_script("arguments[0].style.display='block'; arguments[0].style.visibility='visible'; arguments[0].style.opacity=1;", input_file)
+                    except Exception:
+                        pass
+
                     input_file.send_keys("\n".join(danh_sach_anh_hop_le))
-                    time.sleep(4 + len(danh_sach_anh_hop_le) * 2)
+                    print(f"  -> Da gui file anh len input: {danh_sach_anh_hop_le}")
+                    time.sleep(2 + len(danh_sach_anh_hop_le) * 1)
+
+                    files_count = 0
+                    try:
+                        files_count = driver.execute_script(
+                            "return arguments[0].files ? arguments[0].files.length : 0;",
+                            input_file,
+                        )
+                    except Exception as e:
+                        print(f"  -> Khong lay duoc files tu input: {type(e).__name__}: {e}")
+
+                    if files_count == 0:
+                        print("  -> FAIL: File input da duoc gui nhung khong co files duoc dang ky")
+                        return _attach_fail("ERROR_FILE_INPUT_EMPTY")
+                    print(f"  -> Input file co {files_count} file")
+
+                try:
+                    # Verify preview thumbnail appears after upload
+                    preview_xpath = (
+                        '//*[contains(@aria-label,"image") or contains(@aria-label,"photo") or contains(@aria-label,"Ảnh") or contains(@aria-label,"Photo") or contains(@aria-label,"Hình")]//img | //*[@role="img" and (contains(@src,"blob:") or contains(@src,"data:image"))]'
+                    )
+                    preview_xpath = (
+                        '//*[contains(@aria-label,"image") or contains(@aria-label,"Image") '
+                        'or contains(@aria-label,"photo") or contains(@aria-label,"Photo") '
+                        'or contains(@aria-label,"media") or contains(@aria-label,"Media")]//img '
+                        '| //*[@role="img" and (contains(@src,"blob:") or contains(@src,"data:image") or contains(@src,"scontent"))] '
+                        '| //img[contains(@src,"blob:") or contains(@src,"data:image") or contains(@src,"scontent")]'
+                    )
+                    WebDriverWait(driver, 25).until(
+                        lambda _driver: _count_large_media_previews() > preview_count_before_upload
+                    )
+                    preview_count_after_upload = _count_large_media_previews()
+                    print(f"  -> Da xac nhan preview anh sau khi upload: {preview_count_after_upload}")
                 except Exception as e:
-                    print(f"  -> Khong dinh kem anh fanpage: {e}")
+                    print(f"  -> FAIL: Khong thay preview anh sau khi upload: {type(e).__name__}: {e}")
+                    try:
+                        ts = int(time.time())
+                        path = f"C:/fanpage_attach_fail_{page_slug}_{ts}.png"
+                        driver.save_screenshot(path)
+                        print(f"  -> Screenshot attach fail: {path}")
+                    except Exception:
+                        pass
+                    return _attach_fail("ERROR_IMAGE_PREVIEW_NOT_FOUND")
+
+                time.sleep(3 + len(danh_sach_anh_hop_le) * 1)
+            except Exception as e:
+                print(f"  -> Khong dinh kem anh fanpage: {type(e).__name__}: {e}")
+                try:
+                    ts = int(time.time())
+                    path = f"C:/fanpage_attach_fail_{page_slug}_ERROR_ATTACH_EXCEPTION_{ts}.png"
+                    driver.save_screenshot(path)
+                    print(f"  -> Screenshot attach exception: {path}")
+                except Exception:
+                    pass
+                return f"ERROR_ATTACH_EXCEPTION_{type(e).__name__}"
 
         # ── Click nút Đăng / Publish ───────────────────────────────────
         # Chờ nút Đăng active (không disabled) — quan trọng: nút chỉ active khi có nội dung
@@ -504,7 +839,7 @@ def dang_mot_fanpage(driver, wait, url_fanpage, noi_dung, duong_dan_anh=None):
                 print(f"  -> Screenshot: {path}")
             except Exception:
                 pass
-            return False
+            return "ERROR_PUBLISH_BUTTON_NOT_FOUND"
 
         # Click bằng ActionChains (reliable hơn JS click với React)
         try:
@@ -540,7 +875,7 @@ def dang_mot_fanpage(driver, wait, url_fanpage, noi_dung, duong_dan_anh=None):
 
     except Exception as e:
         print(f"  -> Loi fanpage {url_fanpage}: {type(e).__name__}: {e}")
-        return False
+        return f"ERROR_EXCEPTION_{type(e).__name__}"
 
 
 def thuc_thi_tien_trinh_dang_fanpage(
@@ -551,6 +886,7 @@ def thuc_thi_tien_trinh_dang_fanpage(
     thoi_gian_cho_giua_cac_nhom,
     noi_dung_goc=None,
     giu_nguyen_goc: bool = True,
+    anh_paths_override=None,
 ):
     """Chạy đăng bài lên danh sách Fanpage.
 
@@ -580,7 +916,10 @@ def thuc_thi_tien_trinh_dang_fanpage(
 
     duong_dan_anh = None
     if dang_kem_anh:
-        duong_dan_anh = lay_anh_ngau_nhien(thu_muc_anh)
+        if anh_paths_override:
+            duong_dan_anh = anh_paths_override
+        else:
+            duong_dan_anh = lay_anh_ngau_nhien(thu_muc_anh)
 
     if not fanpage_urls:
         return False, "Không có fanpage nào để đăng."
@@ -618,15 +957,18 @@ def thuc_thi_tien_trinh_dang_fanpage(
         wait = WebDriverWait(driver, 20)   # giảm timeout từ 30 → 20s
 
         tong = len(fanpage_urls)
+        all_success = True
         for i, url in enumerate(fanpage_urls):
             r = dang_mot_fanpage(driver, wait, url, noi_dung, duong_dan_anh)
             ket_qua.append(f"{url}: {r}")
+            if r != "SUCCESS":
+                all_success = False
             if i < tong - 1:
                 # Delay tối thiểu giữa các fanpage
                 time.sleep(5)
 
         print("=== HOAN THANH DANG BAI FANPAGE ===")
-        return True, "\n".join(ket_qua)
+        return all_success, "\n".join(ket_qua)
     except Exception as e:
         return False, f"Loi fanpage: {e}"
     finally:

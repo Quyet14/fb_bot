@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -57,6 +57,23 @@
 
       /* Content area */
       .settings-content { display: flex; flex-direction: column; gap: 16px; }
+      .image-dir-picker {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+        width: min(560px, 100%);
+      }
+      .image-dir-picker input {
+        width: 100% !important;
+        max-width: none !important;
+      }
+      .image-dir-picker .btn {
+        height: 44px;
+        padding: 0 16px;
+        white-space: nowrap;
+        border-radius: var(--radius-sm);
+      }
 
       /* System status card */
       .sys-status-grid {
@@ -75,6 +92,7 @@
         .settings-two-col { grid-template-columns: 1fr; }
         .settings-nav { position: static; }
         .sys-status-grid { grid-template-columns: 1fr 1fr; }
+        .image-dir-picker { grid-template-columns: 1fr; }
       }
       @media (max-width: 560px) {
         .sys-status-grid { grid-template-columns: 1fr; }
@@ -86,7 +104,7 @@
     <!-- ══ GLOBAL BAR ══ -->
     <header class="global-bar">
       <div class="global-bar-left">
-        <a href="../html/dashboard.html" class="global-bar-logo">
+        <a href="/dashboard" class="global-bar-logo">
           <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
           <span class="global-bar-logo-text">FB Bot Console</span>
         </a>
@@ -98,8 +116,8 @@
       </div>
       <div class="global-bar-right">
         <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
-        <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
-        <a href="profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+        <a href="/settings" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="/profile" class="global-bar-btn" title="Tài khoản">👤</a>
       </div>
     </header>
 
@@ -107,12 +125,12 @@
       <div class="sidebar-wrapper" id="sidebarWrapper">
         <aside class="sidebar" id="sidebar">
           <nav>
-            <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></a>
-            <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
-            <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
-            <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
-            <a href="fanpage-schedules.html" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
-            <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+            <a href="/dashboard" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></a>
+            <a href="/groups" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+            <a href="/topics" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
+            <a href="/schedules" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
+            <a href="/fanpage-schedules" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
+            <a href="/logs" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
           </nav>
           <div class="sidebar-status">
             <span class="dot dot-success"></span>
@@ -275,8 +293,11 @@
                     <label for="settingImageDir" data-i18n="settings.img_dir">Đường dẫn thư mục ảnh</label>
                     <span>C:/fb_images hoặc ./images</span>
                   </div>
-                  <div class="settings-row-control" style="flex:1;">
-                    <input type="text" id="settingImageDir" data-i18n-placeholder="settings.img_ph" placeholder="C:/fb_images" style="width:100%;max-width:320px;" />
+                  <div class="settings-row-control" style="flex:1;justify-content:flex-end;">
+                    <div class="image-dir-picker">
+                      <input type="text" id="settingImageDir" data-i18n-placeholder="settings.img_ph" placeholder="C:/fb_images" ondblclick="chooseImageDirectory()" />
+                      <button type="button" class="btn" id="chooseImageDirBtn" onclick="chooseImageDirectory()">📁 Chọn</button>
+                    </div>
                   </div>
                 </div>
               </div>

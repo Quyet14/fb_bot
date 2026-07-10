@@ -86,9 +86,10 @@ class PostScheduleBase(BaseModel):
     giu_nguyen_goc: bool = True
 
     dang_kem_anh: bool = False
+    image_mode: str = "random"          # "random" | "manual"
+    image_paths: List[str] = Field(default_factory=list)  # ảnh chọn sẵn (khi manual)
     active: bool = True
     group_ids: List[int] = Field(default_factory=list)
-
 
 
 class PostScheduleCreate(PostScheduleBase):
@@ -104,6 +105,8 @@ class PostScheduleUpdate(BaseModel):
     giu_nguyen_goc: Optional[bool] = None
 
     dang_kem_anh: Optional[bool] = None
+    image_mode: Optional[str] = None
+    image_paths: Optional[List[str]] = None
     active: Optional[bool] = None
     group_ids: Optional[List[int]] = None
 
@@ -114,6 +117,8 @@ class PostScheduleOut(BaseModel):
     thu: str
     gio: str
     dang_kem_anh: bool
+    image_mode: str = "random"
+    image_paths: List[str] = Field(default_factory=list)
     active: bool
     giu_nguyen_goc: bool = True
 

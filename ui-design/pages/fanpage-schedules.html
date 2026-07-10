@@ -6,6 +6,87 @@
     <title>Lịch đăng Fanpage · FB Bot Console</title>
     <script>
       (function(){try{var t=localStorage.getItem('fbbot-theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){}})();
+      function removeFpImageFromPicker(filename) {
+        const img = _fp_createImages.find(item => item.filename === filename);
+        if (!img) return;
+        _fp_createImages = _fp_createImages.filter(item => item.filename !== filename);
+        _fp_selectedPaths.delete(img.path);
+        renderImageGallery();
+      }
+
+      async function setEditImageState(enabled, mode, paths) {
+        const section = document.getElementById('editImageSection');
+        if (section) section.style.display = enabled ? '' : 'none';
+        const selectedMode = mode === 'manual' ? 'manual' : 'random';
+        const radio = document.querySelector(`input[name="editFpImageMode"][value="${selectedMode}"]`);
+        if (radio) radio.checked = true;
+        if (enabled && !_fp_uploadedImages.length) await loadUploadedImages();
+        const existingPaths = new Set(_fp_uploadedImages.map(img => img.path));
+        _edit_fp_selectedPaths = new Set((Array.isArray(paths) ? paths : []).filter(p => existingPaths.has(p)));
+        onEditImageModeChange();
+        renderEditImageGallery();
+      }
+
+      function toggleEditImageSection(checked) {
+        const section = document.getElementById('editImageSection');
+        if (section) section.style.display = checked ? '' : 'none';
+        if (checked && !_fp_uploadedImages.length) loadUploadedImages().then(() => renderEditImageGallery());
+        if (!checked) {
+          _edit_fp_selectedPaths.clear();
+          renderEditImageGallery();
+        }
+      }
+
+      function onEditImageModeChange() {
+        const mode = document.querySelector('input[name="editFpImageMode"]:checked')?.value || 'random';
+        document.getElementById('editImageManualSection').style.display = mode === 'manual' ? '' : 'none';
+        document.getElementById('editImageRandomSection').style.display = mode === 'random' ? '' : 'none';
+        if (mode === 'random') {
+          _edit_fp_selectedPaths.clear();
+          renderEditImageGallery();
+        }
+      }
+
+      function renderEditImageGallery() {
+        const g = document.getElementById('editImageGallery');
+        if (!g) return;
+        const availableImages = _fp_uploadedImages.filter(img => !_fp_selectedPaths.has(img.path));
+        if (!availableImages.length) {
+          g.innerHTML = '<div style="color:var(--text-faint);font-size:12px;grid-column:1/-1;text-align:center;padding:16px;">Chua co anh nao. Upload anh de bat dau.</div>';
+          return;
+        }
+        const apiBase = `http://${window.location.hostname}:8000`;
+        g.innerHTML = _fp_uploadedImages.map((img, idx) => {
+          const sel = _edit_fp_selectedPaths.has(img.path);
+          const imgUrl = img.url.startsWith('http') ? img.url : `${apiBase}${img.url}`;
+          return `<div class="edit-fp-img-thumb" data-idx="${idx}"
+            style="position:relative;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:1;
+            border:2px solid ${sel?'var(--accent)':'var(--border-soft)'};
+            box-shadow:${sel?'0 0 0 3px var(--accent-soft)':'none'};transition:all .15s;">
+            <img src="${imgUrl}" style="width:100%;height:100%;object-fit:cover;" loading="lazy" />
+            ${sel?'<div style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;">✓</div>':''}
+            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);color:#fff;font-size:10px;padding:2px 4px;">${Math.round(img.size/1024)}KB</div>
+          </div>`;
+        }).join('');
+        g.onclick = (e) => {
+          const thumb = e.target.closest('.edit-fp-img-thumb');
+          if (!thumb) return;
+          const img = _fp_uploadedImages[parseInt(thumb.dataset.idx, 10)];
+          if (!img) return;
+          if (_edit_fp_selectedPaths.has(img.path)) _edit_fp_selectedPaths.delete(img.path);
+          else _edit_fp_selectedPaths.add(img.path);
+          renderEditImageGallery();
+        };
+      }
+
+      async function uploadEditImages(files) {
+        const before = new Set(_fp_uploadedImages.map(img => img.path));
+        await uploadImages(files, true);
+        for (const img of _fp_uploadedImages) {
+          if (!before.has(img.path)) _edit_fp_selectedPaths.add(img.path);
+        }
+        renderEditImageGallery();
+      }
     </script>
     <link rel="stylesheet" href="../html/css/tokens.css?v=202507080001" />
     <link rel="stylesheet" href="../html/css/base.css?v=202507080001" />
@@ -48,7 +129,8 @@
       .fp-chip{font-size:11.5px;padding:4px 11px;border-radius:var(--radius-pill);background:rgba(244,114,182,0.15);color:#f472b6;font-weight:700;border:1px solid rgba(244,114,182,0.35);}
 
       /* Fanpage selector in form */
-      .fp-selector{display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:var(--bg-soft);border-radius:var(--radius-sm);border:1px solid var(--border);min-height:50px;margin-top:6px;}
+      .fp-selector{margin-top:0;}
+      .fp-page-select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:var(--text);font-size:13.5px;min-height:48px;}
       .fp-sel-chip{font-size:12.5px;padding:6px 14px;border-radius:var(--radius-pill);background:rgba(244,114,182,0.12);color:#f472b6;font-weight:700;border:1.5px solid rgba(244,114,182,0.3);cursor:pointer;transition:all .15s;opacity:.7;}
       .fp-sel-chip.selected{opacity:1;border-color:#f472b6;background:rgba(244,114,182,0.22);box-shadow:0 0 10px -3px rgba(244,114,182,0.4);}
 
@@ -92,7 +174,7 @@
   <body class="page-fanpage-schedules">
     <header class="global-bar">
       <div class="global-bar-left">
-        <a href="../html/dashboard.html" class="global-bar-logo">
+        <a href="/dashboard" class="global-bar-logo">
           <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
           <span class="global-bar-logo-text">FB Bot Console</span>
         </a>
@@ -101,8 +183,8 @@
       </div>
       <div class="global-bar-right">
         <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
-        <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
-        <a href="profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+        <a href="/settings" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="/profile" class="global-bar-btn" title="Tài khoản">👤</a>
       </div>
     </header>
 
@@ -110,12 +192,12 @@
       <div class="sidebar-wrapper" id="sidebarWrapper">
         <aside class="sidebar" id="sidebar">
           <nav>
-            <a href="../html/dashboard.html" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></a>
-            <a href="groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
-            <a href="topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
-            <a href="schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
-            <a href="fanpage-schedules.html" class="nav-fanpage active"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
-            <a href="logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+            <a href="/dashboard" class="nav-dashboard"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></a>
+            <a href="/groups" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+            <a href="/topics" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
+            <a href="/schedules" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
+            <a href="/fanpage-schedules" class="nav-fanpage active"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
+            <a href="/logs" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
           </nav>
           <div class="sidebar-status">
             <span class="dot dot-success"></span>
@@ -160,14 +242,14 @@
 
         <div id="alertBox"></div>
 
-        <!-- ══ BƯỚC 1: Tài khoản Facebook ══ -->
+        <!-- Tai khoan Facebook -->
         <div class="section-card">
           <div class="section-head">
-            <h3>👤 Bước 1 — Tài khoản Facebook</h3>
+            <h3>👤 Kết nối tài khoản Facebook</h3>
             <div style="display:flex;gap:8px;align-items:center;">
               <div class="view-toggle">
-                <button class="view-btn active" id="viewCardAcc" onclick="setAccountView('card')">⊞ Thẻ</button>
-                <button class="view-btn" id="viewTableAcc" onclick="setAccountView('table')">☰ Bảng</button>
+                <button class="view-btn active" id="viewCardAcc" onclick="setAccountView('card')"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg> Thẻ</button>
+                <button class="view-btn" id="viewTableAcc" onclick="setAccountView('table')"><svg viewBox="0 0 16 16" width="13" height="13" stroke="currentColor" fill="none" stroke-width="1.8"><line x1="1" y1="4" x2="15" y2="4"/><line x1="1" y1="8" x2="15" y2="8"/><line x1="1" y1="12" x2="15" y2="12"/></svg> Bảng</button>
               </div>
               <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="openAddAccount()">＋ Thêm tài khoản</button>
             </div>
@@ -194,13 +276,13 @@
           </div>
         </div>
 
-        <!-- ══ BƯỚC 2: Tạo lịch đăng ══ -->
+        <!-- Tao lich dang Fanpage -->
         <div class="section-card">
           <div class="section-head">
-            <h3>📅 Bước 2 — Tạo lịch đăng Fanpage</h3>
+            <h3>📅 Thiết lập lịch đăng Fanpage</h3>
           </div>
           <div class="section-body">
-            <form id="fpForm">
+            <form id="fpForm" novalidate>
               <!-- Chọn tài khoản -->
               <div class="field-grid field-grid-2" style="margin-bottom:14px;">
                 <label class="field">
@@ -252,10 +334,44 @@
                 </label>
               </div>
 
-              <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:16px;">
-                <label class="checkbox-inline"><input id="fpDangKemAnh" type="checkbox" /><span>🖼 Đính kèm ảnh</span></label>
+              <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:8px;">
+                <label class="checkbox-inline">
+                  <input id="fpDangKemAnh" type="checkbox" onchange="toggleImageSection(this.checked)" />
+                  <span>🖼 Đính kèm ảnh</span>
+                </label>
                 <input type="hidden" id="fpActive" value="true" />
                 <label class="checkbox-inline"><input id="fpOneTime" type="checkbox" /><span>🔂 Chỉ đăng 1 lần rồi tắt</span></label>
+              </div>
+
+              <!-- Image picker (Lịch Fanpage) -->
+              <div id="imageSection" style="display:none;margin-bottom:16px;padding:14px;background:var(--bg-soft);border-radius:var(--radius-sm);border:1px solid var(--border-soft);">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:10px;">🖼 Cài đặt ảnh</div>
+                <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
+                  <label class="checkbox-inline">
+                    <input type="radio" name="fpImageMode" value="random" checked onchange="onImageModeChange()" />
+                    <span>🎲 Random (tự chọn ảnh phù hợp)</span>
+                  </label>
+                  <label class="checkbox-inline">
+                    <input type="radio" name="fpImageMode" value="manual" onchange="onImageModeChange()" />
+                    <span>📁 Chọn ảnh cụ thể</span>
+                  </label>
+                </div>
+                <div id="imageRandomSection" style="font-size:12.5px;color:var(--text-muted);padding:10px 12px;background:var(--accent-soft);border-radius:8px;">
+                  🤖 Bot tự chọn ảnh ngẫu nhiên từ thư mục ảnh trong <b>Cài đặt</b>.
+                </div>
+                <div id="imageManualSection" style="display:none;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <label id="fpUploadLabel" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-pill);border:1px dashed var(--border);background:var(--glass);font-size:12.5px;font-weight:600;color:var(--text-muted);">
+                      <input type="file" accept="image/*" multiple style="display:none;" id="fpImageUploadInput" onchange="uploadImages(this.files)" />
+                      <span id="fpUploadText">⬆ Tải ảnh lên</span>
+                    </label>
+                    <span style="font-size:12px;color:var(--text-faint);">Chọn không giới hạn — click ảnh để chọn/bỏ</span>
+                  </div>
+                  <div id="imageGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;min-height:60px;">
+                    <div style="color:var(--text-faint);font-size:12px;grid-column:1/-1;text-align:center;padding:16px;">Chưa có ảnh nào.</div>
+                  </div>
+                  <div style="font-size:11.5px;color:var(--text-faint);margin-top:8px;">Click ảnh để chọn/bỏ chọn. Ảnh chọn sẽ được đăng kèm bài.</div>
+                </div>
               </div>
 
               <div style="display:flex;justify-content:flex-end;gap:10px;">
@@ -272,8 +388,8 @@
             <h3>📋 Lịch đăng Fanpage <span id="schedBadge" class="badge badge-idle" style="margin-left:6px;font-size:11px;"></span></h3>
             <div style="display:flex;gap:8px;align-items:center;">
               <div class="view-toggle">
-                <button class="view-btn active" id="viewCardSched" onclick="setSchedView('card')">⊞ Thẻ</button>
-                <button class="view-btn" id="viewTableSched" onclick="setSchedView('table')">☰ Bảng</button>
+                <button class="view-btn active" id="viewCardSched" onclick="setSchedView('card')"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg> Thẻ</button>
+                <button class="view-btn" id="viewTableSched" onclick="setSchedView('table')"><svg viewBox="0 0 16 16" width="13" height="13" stroke="currentColor" fill="none" stroke-width="1.8"><line x1="1" y1="4" x2="15" y2="4"/><line x1="1" y1="8" x2="15" y2="8"/><line x1="1" y1="12" x2="15" y2="12"/></svg> Bảng</button>
               </div>
               <button class="btn" style="font-size:12px;padding:6px 12px;" onclick="loadSchedules()">↺ Làm mới</button>
             </div>
@@ -393,10 +509,39 @@
         <!-- Tùy chọn -->
         <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--text-muted);margin-bottom:10px;">⚙️ Tùy chọn</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
-          <label class="checkbox-inline"><input id="editDangKemAnh" type="checkbox" /><span>🖼 Đính kèm ảnh</span></label>
+          <label class="checkbox-inline"><input id="editDangKemAnh" type="checkbox" onchange="toggleEditImageSection(this.checked)" /><span>🖼 Đính kèm ảnh</span></label>
           <label class="checkbox-inline"><input id="editActive" type="checkbox" /><span>Kích hoạt</span></label>
           <label class="checkbox-inline"><input id="editGiuNguyen" type="checkbox" /><span>🔒 Giữ nguyên gốc</span></label>
           <label class="checkbox-inline"><input id="editOneTime" type="checkbox" /><span>🔂 Chỉ đăng 1 lần</span></label>
+        </div>
+
+        <div id="editImageSection" style="display:none;margin-bottom:18px;padding:14px;background:var(--bg-soft);border-radius:var(--radius-sm);border:1px solid var(--border-soft);">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:10px;">Anh dang kem</div>
+          <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
+            <label class="checkbox-inline">
+              <input type="radio" name="editFpImageMode" value="random" checked onchange="onEditImageModeChange()" />
+              <span>Random</span>
+            </label>
+            <label class="checkbox-inline">
+              <input type="radio" name="editFpImageMode" value="manual" onchange="onEditImageModeChange()" />
+              <span>Chon anh cu the</span>
+            </label>
+          </div>
+          <div id="editImageRandomSection" style="font-size:12.5px;color:var(--text-muted);padding:10px 12px;background:var(--accent-soft);border-radius:8px;">
+            Bot tu chon anh ngau nhien tu thu muc anh trong Cai dat.
+          </div>
+          <div id="editImageManualSection" style="display:none;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <label id="editFpUploadLabel" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-pill);border:1px dashed var(--border);background:var(--glass);font-size:12.5px;font-weight:600;color:var(--text-muted);">
+                <input type="file" accept="image/*" multiple style="display:none;" id="editFpImageUploadInput" onchange="uploadEditImages(this.files)" />
+                <span id="editFpUploadText">Tai anh len</span>
+              </label>
+              <span style="font-size:12px;color:var(--text-faint);">Click anh de chon/bo</span>
+            </div>
+            <div id="editImageGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;min-height:60px;">
+              <div style="color:var(--text-faint);font-size:12px;grid-column:1/-1;text-align:center;padding:16px;">Chua co anh nao.</div>
+            </div>
+          </div>
         </div>
 
         <div class="modal-actions">
@@ -430,6 +575,7 @@
     <script src="../html/theme.js" defer></script>
     <script src="../html/i18n.js" defer></script>
     <script src="../html/auth.js"></script>
+    <script src="../html/script.js"></script>
     <script>
       // ── Sidebar ──
       const sw=document.getElementById('sidebarWrapper'),sb=document.getElementById('sidebar'),st=document.getElementById('sidebarToggle');
@@ -463,6 +609,25 @@
 
       // ── State ──
       let accounts=[],topics=[],schedules=[],selectedPageIds=new Set();
+      // Khai báo sớm để tránh lỗi khi renderAccounts/renderSchedules chạy trước DOMContentLoaded
+      let _accountView = 'card';
+      let _schedView = 'card';
+      // Image picker state — tách riêng khỏi lịch nhóm
+      let _fp_selectedPaths = new Set();
+      let _fp_uploadedImages = [];
+      let _fp_createImages = [];
+      let _edit_fp_selectedPaths = new Set();
+      const USED_FP_IMAGE_NAMES_KEY = 'fbbot-used-fp-image-names';
+      const fpImageFilename = (value) => String(value || '').replace(/\\/g, '/').split('/').pop();
+      function getUsedFpImageNames() {
+        try { return new Set(JSON.parse(localStorage.getItem(USED_FP_IMAGE_NAMES_KEY) || '[]')); }
+        catch (_) { return new Set(); }
+      }
+      function rememberUsedFpImages(paths) {
+        const names = getUsedFpImageNames();
+        (paths || []).map(fpImageFilename).filter(Boolean).forEach(name => names.add(name));
+        try { localStorage.setItem(USED_FP_IMAGE_NAMES_KEY, JSON.stringify([...names])); } catch (_) {}
+      }
 
       // ── Load all ──
       async function loadAll(){await Promise.all([loadAccounts(),loadTopics(),loadSchedules()]);}
@@ -484,7 +649,7 @@
       function renderAccounts(){
         const grid=document.getElementById('accountGrid');
         if(!accounts.length){grid.innerHTML='<div class="empty-state"><div class="empty-icon">👤</div><p>Chưa có tài khoản nào. Nhấn <b>+ Thêm tài khoản</b> để bắt đầu.</p></div>';
-          _renderAccountsTable();
+          if (typeof _renderAccountsTable === 'function') _renderAccountsTable();
           return;
         }
         grid.innerHTML=accounts.map(a=>`
@@ -508,7 +673,7 @@
           </div>
         `).join('');
         // Sync table view nếu đang mở
-        if (_accountView === 'table') _renderAccountsTable();
+        if (typeof _accountView !== 'undefined' && _accountView === 'table' && typeof _renderAccountsTable === 'function') _renderAccountsTable();
       }
 
       async function toggleFpList(id, btn) {
@@ -614,7 +779,7 @@
         sel.innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Đang tải...</span>';
         try{
           const fps=await api('GET',`/fb-accounts/${accId}/fanpages`);
-          if(!fps.length){sel.innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Tài khoản này chưa đồng bộ fanpage. Hãy nhấn "Đồng bộ fanpage" ở Bước 1.</span>';return;}
+          if(!fps.length){sel.innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Tài khoản này chưa đồng bộ fanpage. Hãy nhấn "Đồng bộ fanpage" trong khu vực Tài khoản Facebook.</span>';return;}
           sel.innerHTML=fps.map(fp=>`
             <button type="button" class="fp-sel-chip" data-pid="${esc(fp.page_id)}" onclick="togglePage('${esc(fp.page_id)}',this)">
               📄 ${esc(fp.ten)}
@@ -629,6 +794,37 @@
       }
 
       // ── Topics ──
+      function selectFanpage(pid){
+        selectedPageIds.clear();
+        if(pid) selectedPageIds.add(pid);
+      }
+
+      async function onAccountChange(){
+        const accId=parseInt(document.getElementById('fpAccountId').value);
+        selectedPageIds.clear();
+        const sel=document.getElementById('fpFanpageSelector');
+        if(!accId){
+          sel.innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Hay chon tai khoan Facebook truoc.</span>';
+          return;
+        }
+        sel.innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Dang tai...</span>';
+        try{
+          const fps=await api('GET',`/fb-accounts/${accId}/fanpages`);
+          if(!fps.length){
+            sel.innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Tai khoan nay chua dong bo fanpage.</span>';
+            return;
+          }
+          sel.innerHTML=`
+            <select id="fpPageSelect" class="fp-page-select" onchange="selectFanpage(this.value)">
+              <option value="">-- Chon fanpage --</option>
+              ${fps.map(fp=>`<option value="${esc(fp.page_id)}">${esc(fp.ten)}</option>`).join('')}
+            </select>
+          `;
+        }catch(e){
+          sel.innerHTML=`<span style="color:var(--c-logs);font-size:12.5px;">Loi: ${esc(e.message)}</span>`;
+        }
+      }
+
       async function loadTopics(){
         try{
           topics=await api('GET','/topics/');
@@ -661,7 +857,20 @@
 
         const btn=document.getElementById('fpSubmitBtn');btn.disabled=true;btn.textContent='Đang tạo...';
         try{
-          let body={thu,gio,fb_account_id:accId,page_ids,dang_kem_anh:document.getElementById('fpDangKemAnh').checked,active:true,one_time:document.getElementById('fpOneTime').checked,giu_nguyen_goc:true};
+          const dangKemAnh = document.getElementById('fpDangKemAnh').checked;
+          const imageMode = document.querySelector('input[name="fpImageMode"]:checked')?.value || 'random';
+          const imagePaths = dangKemAnh && imageMode === 'manual' ? [..._fp_selectedPaths] : [];
+          if (dangKemAnh && imageMode === 'manual' && !imagePaths.length) {
+            throw new Error('Chon it nhat 1 anh hoac chuyen sang Random');
+          }
+
+          let body={thu,gio,fb_account_id:accId,page_ids,
+            dang_kem_anh: dangKemAnh,
+            image_mode: imageMode,
+            image_paths: imagePaths,
+            active:true,
+            one_time:document.getElementById('fpOneTime').checked,
+            giu_nguyen_goc:true};
           if(mode==='topic'){
             const tid=parseInt(document.getElementById('fpTopicId').value);
             if(!tid)throw new Error('Chọn chủ đề');
@@ -673,13 +882,26 @@
             body.giu_nguyen_goc=document.getElementById('fpGiuNguyen').checked;
           }
           await api('POST','/fanpage-schedules/',body);
+          rememberUsedFpImages(imagePaths);
           toast('success','Đã tạo lịch','Lịch đăng fanpage đã được kích hoạt.');
           resetForm();await loadSchedules();
         }catch(err){toast('error','Lỗi tạo lịch',err.message);}
         finally{btn.disabled=false;btn.textContent='📅 Tạo lịch';}
       });
 
-      function resetForm(){document.getElementById('fpForm').reset();selectedPageIds.clear();document.querySelectorAll('.fp-sel-chip').forEach(c=>c.classList.remove('selected'));document.getElementById('fpFanpageSelector').innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Hãy chọn tài khoản Facebook trước.</span>';}
+      function resetForm(){
+        document.getElementById('fpForm').reset();
+        selectedPageIds.clear();
+        document.querySelectorAll('.fp-sel-chip').forEach(c=>c.classList.remove('selected'));
+        document.getElementById('fpFanpageSelector').innerHTML='<span style="color:var(--text-faint);font-size:12.5px;">Hãy chọn tài khoản Facebook trước.</span>';
+        // Reset image section — giữ danh sách ảnh, chỉ clear selection
+        document.getElementById('imageSection').style.display = 'none';
+        const radioRandom = document.querySelector('input[name="fpImageMode"][value="random"]');
+        if (radioRandom) { radioRandom.checked = true; onImageModeChange(); }
+        _fp_selectedPaths.clear();
+        _fp_createImages = [];
+        renderImageGallery();
+      }
 
       // ── Thêm fanpage thủ công ──
       function openAddManual(accId) {
@@ -718,7 +940,7 @@
 
       // ── Load & render schedules ──
       async function loadSchedules(){
-        try{schedules=await api('GET','/fanpage-schedules/');renderSchedules();updateStats();}
+        try{schedules=await api('GET','/fanpage-schedules/');rememberUsedFpImages((schedules||[]).flatMap(s=>Array.isArray(s.image_paths)?s.image_paths:[]));renderSchedules();updateStats();renderImageGallery();}
         catch(e){document.getElementById('schedGrid').innerHTML=`<div class="empty-state"><div class="empty-icon">⚠️</div><p>${esc(e.message)}</p></div>`;}
       }
 
@@ -770,9 +992,9 @@
       }
 
       // ── View toggle cho schedules ──
-      let _schedView = 'card';
       function setSchedView(v) {
         _schedView = v;
+        if (typeof setViewPref === 'function') setViewPref('fp-schedules', v);
         document.getElementById('schedCardView').style.display = v === 'card' ? '' : 'none';
         document.getElementById('schedTableView').style.display = v === 'table' ? '' : 'none';
         document.getElementById('viewCardSched').classList.toggle('active', v === 'card');
@@ -780,14 +1002,14 @@
       }
 
       // ── View toggle cho accounts ──
-      let _accountView = 'card';
       function setAccountView(v) {
         _accountView = v;
+        if (typeof setViewPref === 'function') setViewPref('fp-accounts', v);
         document.getElementById('accountCardView').style.display = v === 'card' ? '' : 'none';
         document.getElementById('accountTableView').style.display = v === 'table' ? '' : 'none';
         document.getElementById('viewCardAcc').classList.toggle('active', v === 'card');
         document.getElementById('viewTableAcc').classList.toggle('active', v === 'table');
-        if (v === 'table') _renderAccountsTable();
+        if (typeof _renderAccountsTable === 'function') _renderAccountsTable();
       }
 
       function _renderAccountsTable() {
@@ -842,6 +1064,7 @@
         document.getElementById('editActive').checked = s.active !== false;
         document.getElementById('editGiuNguyen').checked = s.giu_nguyen_goc !== false;
         document.getElementById('editOneTime').checked = !!s.one_time;
+        setEditImageState(!!s.dang_kem_anh, s.image_mode || 'random', s.image_paths || []);
 
         // Xác định mode và điền nội dung
         if (s.content_text) {
@@ -871,9 +1094,18 @@
         if (!thu || !gio) { toast('error','Thiếu thông tin','Chọn ngày và giờ'); return; }
 
         const mode = document.getElementById('editMode').value;
+        const editDangKemAnh = document.getElementById('editDangKemAnh').checked;
+        const editImageMode = document.querySelector('input[name="editFpImageMode"]:checked')?.value || 'random';
+        const editImagePaths = editDangKemAnh && editImageMode === 'manual' ? [..._edit_fp_selectedPaths] : [];
+        if (editDangKemAnh && editImageMode === 'manual' && !editImagePaths.length) {
+          toast('error', 'Thieu anh', 'Chon it nhat 1 anh hoac chuyen sang Random');
+          return;
+        }
         const body = {
           thu, gio,
-          dang_kem_anh:  document.getElementById('editDangKemAnh').checked,
+          dang_kem_anh:  editDangKemAnh,
+          image_mode: editImageMode,
+          image_paths: editImagePaths,
           active:        document.getElementById('editActive').checked,
           giu_nguyen_goc: document.getElementById('editGiuNguyen').checked,
           one_time:      document.getElementById('editOneTime').checked,
@@ -888,6 +1120,7 @@
 
         try {
           await api('PUT', `/fanpage-schedules/${id}`, body);
+          rememberUsedFpImages(editImagePaths);
           toast('success', 'Đã cập nhật lịch', '');
           closeModal('editModal');
           await loadSchedules();
@@ -929,10 +1162,275 @@
       }
 
       // ── Init ──
-      document.addEventListener('DOMContentLoaded',async()=>{
+      function layoutFanpageScheduleForm(){
+        const form = document.getElementById('fpForm');
+        const account = document.getElementById('fpAccountId')?.closest('.field');
+        const fanpage = document.getElementById('fpFanpageSelector')?.closest('.field');
+        const date = document.getElementById('fpThu')?.closest('.field');
+        const time = document.getElementById('fpGio')?.closest('.field');
+        const anchor = form?.querySelector('.mode-tabs');
+        if (!form || !account || !fanpage || !date || !time || !anchor) return;
+        const oldParents = new Set([account.parentElement, fanpage.parentElement, date.parentElement, time.parentElement]);
+
+        const row1 = document.createElement('div');
+        row1.className = 'field-grid field-grid-2';
+        row1.style.marginBottom = '14px';
+        row1.append(account, fanpage);
+
+        const row2 = document.createElement('div');
+        row2.className = 'field-grid field-grid-2';
+        row2.style.marginBottom = '14px';
+        row2.append(date, time);
+
+        form.insertBefore(row1, anchor);
+        form.insertBefore(row2, anchor);
+        oldParents.forEach(parent => {
+          if (parent && parent !== row1 && parent !== row2 && !parent.children.length) parent.remove();
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        layoutFanpageScheduleForm();
         await Auth.guardPage();
+
+        // Fallback nếu script.js chưa load getViewPref
+        if (typeof getViewPref === 'undefined') {
+          window.getViewPref = k => { try { return localStorage.getItem('fbbot-view-'+k)||'card'; } catch(_){return 'card';} };
+          window.setViewPref = (k,v) => { try { localStorage.setItem('fbbot-view-'+k,v); } catch(_){} };
+        }
+
+        // Khôi phục view preference
+        const savedAcc = getViewPref('fp-accounts');
+        if (savedAcc !== 'card') {
+          _accountView = savedAcc;
+          document.getElementById('accountCardView').style.display = 'none';
+          document.getElementById('accountTableView').style.display = '';
+          document.getElementById('viewCardAcc').classList.remove('active');
+          document.getElementById('viewTableAcc').classList.add('active');
+        }
+        const savedSched = getViewPref('fp-schedules');
+        if (savedSched !== 'card') {
+          _schedView = savedSched;
+          document.getElementById('schedCardView').style.display = 'none';
+          document.getElementById('schedTableView').style.display = '';
+          document.getElementById('viewCardSched').classList.remove('active');
+          document.getElementById('viewTableSched').classList.add('active');
+        }
+
+        _fp_selectedPaths.clear();
+        const fpAttach = document.getElementById('fpDangKemAnh');
+        if (fpAttach) fpAttach.checked = false;
+        const imgSection = document.getElementById('imageSection');
+        if (imgSection) imgSection.style.display = 'none';
+        const fpRadioRandom = document.querySelector('input[name="fpImageMode"][value="random"]');
+        if (fpRadioRandom) fpRadioRandom.checked = true;
+        onImageModeChange();
+
+        document.getElementById('imageGallery')?.addEventListener('click', (e) => {
+          const delBtn = e.target.closest('.fp-img-delete');
+          if (delBtn) {
+            e.stopPropagation();
+            removeFpImageFromPicker(delBtn.dataset.filename);
+            return;
+          }
+          const thumb = e.target.closest('.fp-img-thumb');
+          if (!thumb) return;
+          const img = _fp_createImages.find(item => item.path === thumb.dataset.path);
+          if (img) toggleImageSelect(img.path);
+        });
+
         await loadAll();
       });
+
+      // ── Image picker (Lịch Fanpage) — state riêng, KHÔNG chia sẻ với Lịch Nhóm ──
+      // (đã khai báo ở trên cùng trong state block)
+
+      function toggleImageSection(checked) {
+        document.getElementById('imageSection').style.display = checked ? '' : 'none';
+        if (!checked) {
+          _fp_selectedPaths.clear();
+          renderImageGallery();
+        }
+      }
+
+      function onImageModeChange() {
+        const mode = document.querySelector('input[name="fpImageMode"]:checked')?.value || 'random';
+        document.getElementById('imageManualSection').style.display = mode==='manual' ? '' : 'none';
+        document.getElementById('imageRandomSection').style.display = mode==='random' ? '' : 'none';
+        if (mode === 'random') {
+          _fp_selectedPaths.clear();
+          renderImageGallery();
+        }
+      }
+
+      async function loadUploadedImages(includeUsed = false) {
+        try {
+          _fp_uploadedImages = await api('GET', `/fanpage-schedules/uploaded-images${includeUsed ? '?include_used=true' : ''}`);
+          _fp_selectedPaths.clear(); // Clear any previous selection before rendering fresh gallery
+          renderImageGallery();
+        } catch(e) { console.warn('loadUploadedImages:', e); }
+      }
+
+      function renderImageGallery() {
+        const g = document.getElementById('imageGallery');
+        if (!g) return;
+        const filenameOf = (value) => String(value || '').replace(/\\/g, '/').split('/').pop();
+        const scheduledImagePaths = new Set(
+          (schedules || [])
+            .filter(s => s.dang_kem_anh && s.image_mode === 'manual')
+            .flatMap(s => Array.isArray(s.image_paths) ? s.image_paths : [])
+        );
+        const scheduledImageNames = new Set([...scheduledImagePaths].map(filenameOf).filter(Boolean));
+        const locallyUsedImageNames = getUsedFpImageNames();
+        const availableImages = _fp_createImages.filter(img =>
+          !_fp_selectedPaths.has(img.path)
+          && !scheduledImagePaths.has(img.path)
+          && !scheduledImageNames.has(img.filename)
+          && !scheduledImageNames.has(filenameOf(img.path))
+          && !locallyUsedImageNames.has(img.filename)
+          && !locallyUsedImageNames.has(filenameOf(img.path))
+        );
+        if (!availableImages.length) {
+          g.innerHTML = '<div style="color:var(--text-faint);font-size:12px;grid-column:1/-1;text-align:center;padding:16px;">Chưa có ảnh nào. Upload ảnh để bắt đầu.</div>';
+          return;
+        }
+        const apiBase = `http://${window.location.hostname}:8000`;
+        g.innerHTML = availableImages.map((img, idx) => {
+          const sel = _fp_selectedPaths.has(img.path);
+          const imgUrl = img.url.startsWith('http') ? img.url : `${apiBase}${img.url}`;
+          return `<div class="fp-img-thumb" data-path="${esc(img.path)}"
+            style="position:relative;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:1;
+            border:2px solid ${sel?'var(--accent)':'var(--border-soft)'};
+            box-shadow:${sel?'0 0 0 3px var(--accent-soft)':'none'};transition:all .15s;">
+            <img src="${imgUrl}" style="width:100%;height:100%;object-fit:cover;" loading="lazy" />
+            ${sel?'<div style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;">✓</div>':''}
+            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);color:#fff;font-size:10px;padding:2px 4px;">${Math.round(img.size/1024)}KB</div>
+            <button type="button" class="fp-img-delete" data-filename="${esc(img.filename)}"
+              style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:rgba(239,68,68,.9);border:none;color:#fff;font-size:10px;cursor:pointer;opacity:0;transition:opacity .15s;"
+              onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">✕</button>
+          </div>`;
+        }).join('');
+      }
+
+      function toggleImageSelect(path) {
+        if (_fp_selectedPaths.has(path)) _fp_selectedPaths.delete(path);
+        else _fp_selectedPaths.add(path);
+        renderImageGallery();
+      }
+
+      async function uploadImages(files, forEdit = false) {
+        if (!files || !files.length) return;
+        const input = document.getElementById('fpImageUploadInput');
+        const txt = document.getElementById('fpUploadText');
+        const label = document.getElementById('fpUploadLabel');
+        label.style.pointerEvents = 'none';
+        if (txt) txt.textContent = '⏳ Đang upload...';
+        let uploaded = 0;
+        for (const file of files) {
+          try {
+            const fd = new FormData(); fd.append('file', file);
+            const base = await getBase();
+            const token = localStorage.getItem('fbbot-access-token');
+            const res = await fetch(`${base}/fanpage-schedules/upload-image`, {
+              method:'POST', headers: token?{Authorization:`Bearer ${token}`}:{}, body:fd
+            });
+            if (res.ok) {
+              const img = await res.json();
+              _fp_uploadedImages.push(img);
+              if (!forEdit) _fp_createImages.push(img);
+              uploaded++;
+            }
+          } catch(e) {}
+        }
+        input.value = '';
+        if (txt) txt.textContent = '⬆ Tải ảnh lên';
+        label.style.pointerEvents = '';
+        if (uploaded > 0) { renderImageGallery(); toast('success', `Đã upload ${uploaded} ảnh`, ''); }
+      }
+
+      async function deleteFpImage(filename) {
+        try {
+          await api('DELETE', `/fanpage-schedules/uploaded-images/${filename}`);
+          _fp_uploadedImages = _fp_uploadedImages.filter(img => img.filename !== filename);
+          const path = [..._fp_selectedPaths].find(p => p.includes(filename));
+          if (path) _fp_selectedPaths.delete(path);
+          renderImageGallery();
+        } catch(e) { toast('error', 'Lỗi xóa ảnh', e.message); }
+      }
+
+      async function setEditImageState(enabled, mode, paths) {
+        const section = document.getElementById('editImageSection');
+        if (section) section.style.display = enabled ? '' : 'none';
+        const selectedMode = mode === 'manual' ? 'manual' : 'random';
+        const radio = document.querySelector(`input[name="editFpImageMode"][value="${selectedMode}"]`);
+        if (radio) radio.checked = true;
+        if (enabled) await loadUploadedImages(true);
+        const existingPaths = new Set(_fp_uploadedImages.map(img => img.path));
+        _edit_fp_selectedPaths = new Set((Array.isArray(paths) ? paths : []).filter(p => existingPaths.has(p)));
+        onEditImageModeChange();
+        renderEditImageGallery();
+      }
+
+      function toggleEditImageSection(checked) {
+        const section = document.getElementById('editImageSection');
+        if (section) section.style.display = checked ? '' : 'none';
+        if (checked) loadUploadedImages(true).then(() => renderEditImageGallery());
+        if (!checked) {
+          _edit_fp_selectedPaths.clear();
+          renderEditImageGallery();
+        }
+      }
+
+      function onEditImageModeChange() {
+        const mode = document.querySelector('input[name="editFpImageMode"]:checked')?.value || 'random';
+        document.getElementById('editImageManualSection').style.display = mode === 'manual' ? '' : 'none';
+        document.getElementById('editImageRandomSection').style.display = mode === 'random' ? '' : 'none';
+        if (mode === 'random') {
+          _edit_fp_selectedPaths.clear();
+          renderEditImageGallery();
+        }
+      }
+
+      function renderEditImageGallery() {
+        const g = document.getElementById('editImageGallery');
+        if (!g) return;
+        const selectedImages = _fp_uploadedImages.filter(img => _edit_fp_selectedPaths.has(img.path));
+        if (!selectedImages.length) {
+          g.innerHTML = '<div style="color:var(--text-faint);font-size:12px;grid-column:1/-1;text-align:center;padding:16px;">Chua co anh nao. Upload anh de bat dau.</div>';
+          return;
+        }
+        const apiBase = `http://${window.location.hostname}:8000`;
+        g.innerHTML = selectedImages.map((img, idx) => {
+          const sel = _edit_fp_selectedPaths.has(img.path);
+          const imgUrl = img.url.startsWith('http') ? img.url : `${apiBase}${img.url}`;
+          return `<div class="edit-fp-img-thumb" data-path="${esc(img.path)}"
+            style="position:relative;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:1;
+            border:2px solid ${sel?'var(--accent)':'var(--border-soft)'};
+            box-shadow:${sel?'0 0 0 3px var(--accent-soft)':'none'};transition:all .15s;">
+            <img src="${imgUrl}" style="width:100%;height:100%;object-fit:cover;" loading="lazy" />
+            ${sel?'<div style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;">✓</div>':''}
+            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);color:#fff;font-size:10px;padding:2px 4px;">${Math.round(img.size/1024)}KB</div>
+          </div>`;
+        }).join('');
+        g.onclick = (e) => {
+          const thumb = e.target.closest('.edit-fp-img-thumb');
+          if (!thumb) return;
+          const img = _fp_uploadedImages.find(item => item.path === thumb.dataset.path);
+          if (!img) return;
+          if (_edit_fp_selectedPaths.has(img.path)) _edit_fp_selectedPaths.delete(img.path);
+          else _edit_fp_selectedPaths.add(img.path);
+          renderEditImageGallery();
+        };
+      }
+
+      async function uploadEditImages(files) {
+        const before = new Set(_fp_uploadedImages.map(img => img.path));
+        await uploadImages(files, true);
+        for (const img of _fp_uploadedImages) {
+          if (!before.has(img.path)) _edit_fp_selectedPaths.add(img.path);
+        }
+        renderEditImageGallery();
+      }
     </script>
   </body>
 </html>

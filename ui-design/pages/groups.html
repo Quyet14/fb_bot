@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -18,14 +18,14 @@
     <link rel="stylesheet" href="../html/css/responsive.css?v=202507080001" />
     <style>
       /* ── Page extras ── */
-      .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+      .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
 
       .group-card {
         background: var(--glass);
         backdrop-filter: blur(var(--blur));
         -webkit-backdrop-filter: blur(var(--blur));
-        border: 1px solid var(--glass-border);
-        border-radius: var(--radius);
+        border: 1px solid var(--border-soft);
+        border-radius: 18px;
         padding: 18px 20px;
         box-shadow: var(--shadow);
         display: flex;
@@ -36,31 +36,54 @@
         transition: transform 0.22s var(--ease), box-shadow 0.22s var(--ease), border-color 0.22s;
         animation: surfaceIn 0.35s var(--ease) backwards;
       }
-      .group-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lift); border-color: var(--accent); }
+      .group-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); border-color: var(--border); }
       .group-card::before {
         content: '';
         position: absolute;
         top: 0; left: 0; right: 0;
         height: 3px;
-        background: linear-gradient(90deg, var(--c-groups), var(--c-dashboard) 70%, transparent);
-        border-radius: var(--radius) var(--radius) 0 0;
+        background: linear-gradient(90deg, var(--c-groups), var(--c-dashboard) 72%);
+        border-radius: 18px 18px 0 0;
       }
 
-      .group-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-      .group-card-name { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.35; }
+      .group-card-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 12px;
+      }
+      .group-card-main { min-width: 0; }
+      .group-card-name {
+        font-size: 15px; font-weight: 800; color: var(--text); line-height: 1.35;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
       .group-card-url {
         font-size: 12px; color: var(--text-faint); font-family: var(--font-mono);
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         margin-top: 2px;
       }
+      .group-card-badge { max-width: 116px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; justify-content: center; }
       .group-card-note {
         font-size: 12.5px; color: var(--text-muted);
         background: var(--surface-2);
         border-radius: 8px;
         padding: 7px 10px;
         min-height: 30px;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
       }
-      .group-card-actions { display: flex; gap: 8px; margin-top: 4px; }
+      .group-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+      .group-card-actions .btn {
+        width: 100%;
+        min-height: 40px;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+      }
 
       .page-stat-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
 
@@ -179,6 +202,12 @@
         cursor: pointer; transition: all .15s;
       }
       .view-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+      @media (max-width: 520px) {
+        .groups-grid { grid-template-columns: 1fr; }
+        .group-card { padding: 16px; }
+        .group-card-head { grid-template-columns: 1fr; }
+        .group-card-badge { justify-self: start; max-width: 100%; }
+      }
     </style>
   </head>
   <body class="page-groups">
@@ -186,7 +215,7 @@
     <!-- ══ GLOBAL BAR ══ -->
     <header class="global-bar">
       <div class="global-bar-left">
-        <a href="../html/dashboard.html" class="global-bar-logo">
+        <a href="/dashboard" class="global-bar-logo">
           <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
           <span class="global-bar-logo-text">FB Bot Console</span>
         </a>
@@ -201,8 +230,8 @@
           🔔
           <span class="notif-badge" id="notifCount" style="display:none">0</span>
         </button>
-        <a href="settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
-        <a href="profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+        <a href="/settings" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="/profile" class="global-bar-btn" title="Tài khoản">👤</a>
       </div>
     </header>
 
@@ -213,22 +242,22 @@
 
 
           <nav>
-            <a href="../html/dashboard.html" class="nav-dashboard">
+            <a href="/dashboard" class="nav-dashboard">
               <span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span>
             </a>
-            <a href="groups.html" class="nav-groups active">
+            <a href="/groups" class="nav-groups active">
               <span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span>
             </a>
-            <a href="topics.html" class="nav-topics">
+            <a href="/topics" class="nav-topics">
               <span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span>
             </a>
-            <a href="schedules.html" class="nav-schedules">
+            <a href="/schedules" class="nav-schedules">
               <span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span>
             </a>
-            <a href="fanpage-schedules.html" class="nav-fanpage">
+            <a href="/fanpage-schedules" class="nav-fanpage">
               <span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span>
             </a>
-            <a href="logs.html" class="nav-logs">
+            <a href="/logs" class="nav-logs">
               <span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span>
             </a>
           </nav>
@@ -315,8 +344,8 @@
           <div class="panel-head">
             <h3><span>👥</span> Danh sách nhóm <span id="groupBadge" class="badge badge-idle" style="font-size:11px; margin-left:6px;"></span></h3>
             <div class="view-toggle">
-              <button class="view-btn active" id="viewCard" onclick="setView('card')">⊞ Thẻ</button>
-              <button class="view-btn" id="viewTable" onclick="setView('table')">☰ Bảng</button>
+              <button class="view-btn active" id="viewCard" onclick="setView('card')"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg> Thẻ</button>
+              <button class="view-btn" id="viewTable" onclick="setView('table')"><svg viewBox="0 0 16 16" width="13" height="13" stroke="currentColor" fill="none" stroke-width="1.8"><line x1="1" y1="4" x2="15" y2="4"/><line x1="1" y1="8" x2="15" y2="8"/><line x1="1" y1="12" x2="15" y2="12"/></svg> Bảng</button>
             </div>
           </div>
 
@@ -404,6 +433,7 @@
       let _currentView = 'card';
       function setView(v) {
         _currentView = v;
+        if (typeof setViewPref === 'function') setViewPref('groups', v);
         document.getElementById('groupCardsView').style.display = v === 'card' ? '' : 'none';
         document.getElementById('groupTableView').style.display = v === 'table' ? '' : 'none';
         document.getElementById('viewCard').classList.toggle('active', v === 'card');
@@ -440,18 +470,18 @@
         grid.innerHTML = groups.map((g, i) => `
           <div class="group-card" style="animation-delay:${0.03 + i * 0.04}s">
             <div class="group-card-head">
-              <div>
+              <div class="group-card-main">
                 <div class="group-card-name">${escapeHtml(g.ten)}</div>
                 <div class="group-card-url">${escapeHtml(g.url)}</div>
               </div>
-              <span class="badge ${g.loai === 'fanpage' ? 'badge-accent' : 'badge-success'}" style="flex-shrink:0;">
+              <span class="badge group-card-badge ${g.loai === 'fanpage' ? 'badge-accent' : 'badge-success'}">
                 ${g.loai === 'fanpage' ? '📄 Fanpage' : '👥 Group'}
               </span>
             </div>
             ${g.ghi_chu ? `<div class="group-card-note">${escapeHtml(g.ghi_chu)}</div>` : ''}
             <div class="group-card-actions">
-              <button data-action="edit-group" data-id="${g.id}" class="btn" style="flex:1;font-size:12px;padding:7px 0;">✏️ Sửa</button>
-              <button data-action="delete-group" data-id="${g.id}" class="btn btn-danger" style="flex:1;font-size:12px;padding:7px 0;">🗑 Xóa</button>
+              <button data-action="edit-group" data-id="${g.id}" class="btn">✏️ Sửa</button>
+              <button data-action="delete-group" data-id="${g.id}" class="btn btn-danger">🗑 Xóa</button>
             </div>
           </div>
         `).join('');
@@ -478,6 +508,9 @@
           renderGroupCards();
           updateGroupStats();
         };
+        // Khôi phục view đã lưu
+        const saved = (typeof getViewPref === 'function') ? getViewPref('groups') : 'card';
+        if (saved !== 'card') setView(saved);
       });
     </script>
   </body>

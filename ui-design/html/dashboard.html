@@ -12,10 +12,13 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="css/tokens.css?v=202507080001" />
-    <link rel="stylesheet" href="css/base.css?v=202507080001" />
-    <link rel="stylesheet" href="css/components.css?v=202507080001" />
-    <link rel="stylesheet" href="css/responsive.css?v=202507080001" />
+    <script>
+      window.FBBOT_API_URL = 'http://192.168.1.149:8000';
+    </script>
+    <link rel="stylesheet" href="/html/css/tokens.css?v=202507080001" />
+    <link rel="stylesheet" href="/html/css/base.css?v=202507080001" />
+    <link rel="stylesheet" href="/html/css/components.css?v=202507080001" />
+    <link rel="stylesheet" href="/html/css/responsive.css?v=202507080001" />
     <style>
       /* ── Dashboard extras ── */
       .stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
@@ -148,7 +151,7 @@
     <!-- ══ GLOBAL BAR ══ -->
     <header class="global-bar">
       <div class="global-bar-left">
-        <a href="index.html" class="global-bar-logo">
+        <a href="/" class="global-bar-logo">
           <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</span>
           <span class="global-bar-logo-text">FB Bot Console</span>
         </a>
@@ -160,8 +163,8 @@
       </div>
       <div class="global-bar-right">
         <button class="global-bar-btn" id="notifBtn" title="Thông báo">🔔<span class="notif-badge" id="notifCount" style="display:none">0</span></button>
-        <a href="../pages/settings.html" class="global-bar-btn" title="Cài đặt">⚙️</a>
-        <a href="../pages/profile.html" class="global-bar-btn" title="Tài khoản">👤</a>
+        <a href="/settings" class="global-bar-btn" title="Cài đặt">⚙️</a>
+        <a href="/profile" class="global-bar-btn" title="Tài khoản">👤</a>
       </div>
     </header>
 
@@ -169,12 +172,12 @@
       <div class="sidebar-wrapper" id="sidebarWrapper">
         <aside class="sidebar" id="sidebar">
           <nav>
-            <a href="dashboard.html" class="nav-dashboard active"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
-            <a href="../pages/groups.html" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
-            <a href="../pages/topics.html" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
-            <a href="../pages/schedules.html" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
-            <a href="../pages/fanpage-schedules.html" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
-            <a href="../pages/logs.html" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
+            <a href="/dashboard" class="nav-dashboard active"><span class="nav-icon">🏠</span><span class="nav-label" data-i18n="nav.dashboard" data-i18n="dash.title">Dashboard</span></a>
+            <a href="/groups" class="nav-groups"><span class="nav-icon">👥</span><span class="nav-label" data-i18n="nav.groups">Nhóm</span></a>
+            <a href="/topics" class="nav-topics"><span class="nav-icon">🏷️</span><span class="nav-label" data-i18n="nav.topics">Chủ Đề</span></a>
+            <a href="/schedules" class="nav-schedules"><span class="nav-icon">📅</span><span class="nav-label" data-i18n="nav.schedules">Lịch Nhóm</span></a>
+            <a href="/fanpage-schedules" class="nav-fanpage"><span class="nav-icon">📄</span><span class="nav-label">Lịch Fanpage</span></a>
+            <a href="/logs" class="nav-logs"><span class="nav-icon">📋</span><span class="nav-label" data-i18n="nav.logs">Logs</span></a>
           </nav>
           <div class="sidebar-status">
             <span class="dot dot-success"></span>
@@ -345,12 +348,12 @@
 
     <div id="toastContainer" class="toast-container"></div>
 
-    <script src="theme.js" defer></script>
-    <script src="i18n.js" defer></script>
-    <script src="auth.js"></script>
-    <script src="api.js" defer></script>
-    <script src="app.js" defer></script>
-    <script src="script.js" defer></script>
+    <script src="/html/theme.js" defer></script>
+    <script src="/html/i18n.js" defer></script>
+    <script src="/html/auth.js"></script>
+    <script src="/html/api.js" defer></script>
+    <script src="/html/app.js" defer></script>
+    <script src="/html/script.js" defer></script>
     <script>
       // Sidebar collapse
       const sw = document.getElementById('sidebarWrapper'), sb = document.getElementById('sidebar'), st = document.getElementById('sidebarToggle');
